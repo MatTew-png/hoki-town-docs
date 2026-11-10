@@ -25,7 +25,13 @@ local tuneFolder = car:FindFirstChild("Hoki-Chassis Tune") or car:FindFirstChild
 local _Tune = require(tuneFolder)
 local ArcadeJumpRemote = tuneFolder:WaitForChild("ArcadeJumpRequest", 5)
 local Units = require(tuneFolder.README.Units)
-local VirtualInput = script:FindFirstChild("VirtualInput")
+local VirtualInput = script:FindFirstChild("VirtualInput") :: BindableEvent?
+if not VirtualInput then
+	local be = Instance.new("BindableEvent")
+	be.Name = "VirtualInput"
+	be.Parent = script
+	VirtualInput = be
+end
 
 if _Tune.Mobile then
 	player.PlayerGui.ScreenOrientation = Enum.ScreenOrientation.LandscapeSensor
@@ -807,7 +813,9 @@ script.Destroying:Connect(function()
 end)
 UserInputService.InputChanged:Connect(DealWithInput)
 UserInputService.InputEnded:Connect(DealWithInput)
-VirtualInput.Event:Connect(DealWithInput)
+if VirtualInput then
+	VirtualInput.Event:Connect(DealWithInput)
+end
 
 local function DealWithMobileInput()
 	local mobile = script.Parent.Mobile
