@@ -1,0 +1,122 @@
+{
+  "name": "HOKI_TOWN",
+  "tree": {
+    "$className": "DataModel",
+    "Workspace": {
+      "$className": "Workspace",
+      "$ignoreUnknownInstances": true,
+      "TeslaRoadster_HokiChassis": {
+        "$className": "Model",
+        "$ignoreUnknownInstances": true,
+        "VehicleSystems": {
+          "$path": "src/TeslaRoadster/VehicleSystems.server.luau"
+        },
+        "Hoki-Chassis Tune": {
+          "$path": "src/TeslaRoadster/A-Chassis Tune"
+        },
+        "CarStatusGui": {
+          "$className": "ScreenGui",
+          "$ignoreUnknownInstances": true,
+          "VehicleStatusClient": {
+            "$path": "src/TeslaRoadster/CarStatusGui/VehicleStatusClient.client.luau"
+          }
+        }
+      },
+      "TeslaRoadster_Day1": {
+        "$className": "Model",
+        "$ignoreUnknownInstances": true,
+        "VehicleSystems": {
+          "$path": "src/TeslaRoadster_Day1/VehicleSystems.server.luau"
+        },
+        "A-Chassis Tune": {
+          "$path": "src/TeslaRoadster_Day1/A-Chassis Tune"
+        },
+        "CarStatusGui": {
+          "$className": "ScreenGui",
+          "$ignoreUnknownInstances": true,
+          "VehicleStatusClient": {
+            "$path": "src/TeslaRoadster_Day1/CarStatusGui/VehicleStatusClient.client.luau"
+          }
+        }
+      },
+      "Tesla_Roadster_Base_2026": {
+        "$className": "Model",
+        "$ignoreUnknownInstances": true,
+        "RaycastChassisServer": {
+          "$path": "src/TeslaRoadster_Raycast/RaycastChassisServer.server.luau"
+        },
+        "RaycastChassisClient": {
+          "$path": "src/TeslaRoadster_Raycast/RaycastChassisClient.client.luau"
+        },
+        "RaycastVehiclePhysics": {
+          "$path": "src/TeslaRoadster_Raycast/RaycastVehiclePhysics.luau"
+        },
+        "VehicleColorClient": {
+          "$path": "src/TeslaRoadster_Raycast/VehicleColorClient.client.luau"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "LiftService": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "HydraulicLiftController": {
+          "$path": "src/ServerScriptService/LiftService/HydraulicLiftController.server.luau"
+        }
+      },
+      "PropService": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "FastPropResetManager": {
+          "$path": "src/ServerScriptService/PropService/FastPropResetManager.server.luau"
+        }
+      }
+    },
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "VehicleColorService": {
+        "$path": "src/ReplicatedStorage/VehicleColorService.luau"
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "$ignoreUnknownInstances": true,
+      "DisabledVehicles": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "TeslaRoadster_Raycast": {
+          "$className": "Model",
+          "$ignoreUnknownInstances": true,
+          "RaycastChassisServer": {
+            "$path": "src/TeslaRoadster_Raycast/RaycastChassisServer.server.luau"
+          },
+          "RaycastChassisClient": {
+            "$path": "src/TeslaRoadster_Raycast/RaycastChassisClient.client.luau"
+          },
+          "RaycastVehiclePhysics": {
+            "$path": "src/TeslaRoadster_Raycast/RaycastVehiclePhysics.luau"
+          },
+          "VehicleColorClient": {
+            "$path": "src/TeslaRoadster_Raycast/VehicleColorClient.client.luau"
+          }
+        },
+        "TeslaRoadster_NGChassis": {
+          "$className": "Model",
+          "$ignoreUnknownInstances": true,
+          "NGChassisServer": {
+            "$path": "src/TeslaRoadster_NGChassis/NGChassisServer.server.luau"
+          },
+          "NGChassisClient": {
+            "$path": "src/TeslaRoadster_NGChassis/NGChassisClient.client.luau"
+          },
+          "NGChassisConfig": {
+            "$path": "src/TeslaRoadster_NGChassis/NGChassisConfig.luau"
+          }
+        }
+      }
+    }
+  }
+}
