@@ -1,3 +1,4 @@
+print('>>> [INIT DEBUG] Line 1 reached')
 --[[	
 		             _____ _                   _     
 	     /\         / ____| |                 (_)    
@@ -10,9 +11,8 @@
 
 --[[START]]
 local Players = game:GetService("Players")
-local car = script.Parent.Parent
-local seat = car:WaitForChild("DriveSeat") :: VehicleSeat
-seat.Disabled = false -- Instant entry enabled for Hoki Town
+print('>>> [INIT DEBUG] Reached end of Initialize')
+script.Parent.Parent.DriveSeat.Disabled = false -- Instant entry enabled for Hoki Town
 
 local _BuildVersion = require(script.Parent.README)
 
@@ -80,7 +80,7 @@ local seat = car.DriveSeat
 local Wheels = {}
 local Drive = Wheels
 local Tune = require(script.Parent)
-local Units = require(script.Parent:WaitForChild("README"):WaitForChild("Units"))
+local Units = require(car["A-Chassis Tune"].README.Units)
 
 local shutdownEvent = script.Parent:FindFirstChild("Shutdown")
 if not shutdownEvent then
@@ -736,50 +736,6 @@ task.wait()
 print('>>> [INIT DEBUG] Before ModelWeld Body')
 ModelWeld(car.Body, car.DriveSeat)
 print('>>> [INIT DEBUG] After ModelWeld Body')
-local function SetupAnimatedSteering()
-	local teera = car.Body:FindFirstChild("Teera Roadster")
-	if not teera then return end
-
-	local steerModel = teera:FindFirstChild("Sterring Wheel")
-	if steerModel then
-		local p13 = steerModel:FindFirstChild("Plane.013")
-		local p14 = steerModel:FindFirstChild("Plane.014")
-		local p16 = steerModel:FindFirstChild("Plane.016")
-		if p13 and p14 and p16 then
-			p13.Massless = true
-			p14.Massless = true
-			p16.Massless = true
-			p13.CanCollide = false
-			p14.CanCollide = false
-			p16.CanCollide = false
-			
-			local w14 = p16:FindFirstChild("Weld14") or Instance.new("WeldConstraint")
-			w14.Name = "Weld14"
-			w14.Part0 = p16
-			w14.Part1 = p14
-			w14.Parent = p16
-			
-			local w13 = p16:FindFirstChild("Weld13") or Instance.new("WeldConstraint")
-			w13.Name = "Weld13"
-			w13.Part0 = p16
-			w13.Part1 = p13
-			w13.Parent = p16
-			
-			local steerMotor = car.DriveSeat:FindFirstChild("SteerMotor") or Instance.new("Motor6D")
-			steerMotor.Name = "SteerMotor"
-			steerMotor.Part0 = car.DriveSeat
-			steerMotor.Part1 = p16
-			local baseSteerC0 = car.DriveSeat.CFrame:ToObjectSpace(p16.CFrame)
-			steerMotor:SetAttribute("BaseC0", baseSteerC0)
-			steerMotor.C0 = baseSteerC0
-			steerMotor.C1 = CFrame.new()
-			steerMotor.Parent = car.DriveSeat
-		end
-	end
-end
-SetupAnimatedSteering()
-
-
 
 --Unanchor
 task.wait()
@@ -965,9 +921,7 @@ seat.ChildRemoved:Connect(function(child: Instance)
 		end)
 
 		-- Clear replicated controls and persist the parking-brake state.
-		local tuneF = car:FindFirstChild("Hoki-Chassis Tune") or car:FindFirstChild("A-Chassis Tune")
-		local interfaceValues = tuneF and tuneF:FindFirstChild("A-Chassis Interface") and tuneF["A-Chassis Interface"]:FindFirstChild("Values")
-		if not interfaceValues then return end
+		local interfaceValues = car["A-Chassis Tune"]["A-Chassis Interface"].Values
 		interfaceValues.InputThrottle.Value = 0
 		interfaceValues.Throttle.Value = 0
 		interfaceValues.InputBrake.Value = 0
@@ -1243,8 +1197,6 @@ end
 task.wait(1)
 print('>>> [INIT DEBUG] Reached end of Initialize')
 script.Parent.Parent.DriveSeat.Disabled = false
-script.Parent.Parent.DriveSeat.RootPriority = 127
-car:SetAttribute("Initialized", true)
 
 --[END]]
 

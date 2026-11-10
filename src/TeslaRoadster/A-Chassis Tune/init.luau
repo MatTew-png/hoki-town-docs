@@ -26,7 +26,29 @@ local Config = {
 	SteerSpeed       = 1.35,       -- α╕äα╕ºα╕▓α╕íα╣äα╕ºα╕₧α╕ºα╕çα╕íα╕▓α╕Ñα╕▒α╕óα╕äα╕íα╕èα╕▒α╕ö
 	ReturnSpeed      = 2.2,       -- α╕äα╕╖α╕Öα╕₧α╕ºα╕çα╕íα╕▓α╕Ñα╕▒α╕óα╕òα╕úα╕çα╣äα╕º α╕èα╣êα╕ºα╕óα╣âα╕½α╣ëα╣üα╕üα╣ëα╕¡α╕▓α╕üα╕▓α╕úα╕¢α╕▒α╕öα╕çα╣êα╕▓α╕ó
 	SteerAtTopSpeed  = 45,        -- α╕Ñα╕öα╕íα╕╕α╕íα╣Çα╕Ñα╕╡α╣ëα╕óα╕ºα╕ùα╕╡α╣êα╕äα╕ºα╕▓α╕íα╣Çα╕úα╣çα╕ºα╕¬α╕╣α╕çα╣Çα╕₧α╕╖α╣êα╕¡α╕äα╕ºα╕▓α╕íα╕íα╕▒α╣êα╕Öα╕äα╕ç α╣äα╕íα╣êα╕½α╕íα╕╕α╕Öα╣Çα╕äα╕ºα╣ëα╕ç
-	SteerDecaySpeed  = 140,       -- α╕êα╕╕α╕öα╣Çα╕úα╕┤α╣êα╕íα╕Ñα╕öα╕íα╕╕α╕íα╣Çα╕Ñα╕╡α╣ëα╕óα╕ºα╕òα╕▓α╕íα╕äα╕ºα╕▓α╕íα╣Çα╕úα╣çα╕º
+	SteerDecaySpeed  = 140,
+	-- เลี้ยวแบบอาร์เคด (Arcade Steering & Slip Control)
+	ArcadeSteering = true,
+	ArcadeSteerLowSpeedDegPerSec = 165, -- เลี้ยวแคบขึ้นตอนความเร็วต่ำ (องศา/วินาที)
+	ArcadeSteerHighSpeedDegPerSec = 120, -- ยังเลี้ยวได้คล่องตอนความเร็วสูง (องศา/วินาที)
+	ArcadeSteerFullSpeedKmh = 140, -- ความเร็วที่ใช้ความไวแบบ HighSpeed เต็มที่
+	ArcadeSteerMinMoveStudsPerSec = 2, -- ต่ำกว่านี้รถจะไม่หมุนเมื่อกดเลี้ยว
+	ArcadeSteerFullMoveStudsPerSec = 12, -- ความเร็วที่ได้แรงเลี้ยวเต็มตามค่า LowSpeed/HighSpeed
+	ArcadeSteerResponse = 20, -- เริ่มเลี้ยวทันที แต่ไล่อัตราหมุนให้ไม่กระชาก
+	ArcadeSteerReleaseDamping = 15, -- ความเร็วที่หยุดหมุนหลังปล่อยปุ่ม
+	ArcadeVelocityFollow = 0.9, -- หมุนทิศความเร็วตามตัวรถ ลดอาการปัด (0-1)
+	ArcadeLateralGrip = 12, -- ลดการไถลด้านข้างให้เพลาหลังตามโค้งได้เนียนขึ้น
+	ArcadeRollStability = 9, -- แรงประคองตัวรถให้ตรงกับพื้นเอียง
+	ArcadeRollDamping = 8, -- ลดการแกว่งซ้ายขวาของตัวถัง
+	ArcadeVisualWheelAngleLow = 18, -- มุมล้อหน้าเมื่อเลี้ยวช้า
+	ArcadeVisualWheelAngleHigh = 8, -- มุมล้อหน้าเมื่อเลี้ยวเร็ว
+	CurbRecoveryGroundProbe = 3.5,
+	CurbRecoveryDuration = 0.35,
+	CurbRecoveryMinimumSpeed = 35, -- เริ่มช่วยประคองเมื่อไต่ขอบด้วยความเร็วสูง (studs/s)
+	CurbRecoveryRollStrength = 8, -- แรงดึงตัวรถกลับเมื่อเอียงข้าง
+	CurbRecoveryPitchStrength = 4, -- แรงลดอาการหัวเชิดมากเกินไป
+	CurbRecoveryDamping = 16, -- ลดความเร็วการหมุนก่อนรถพลิก
+	CurbRecoveryMaxAngularSpeed = 3, -- จำกัดอัตราหมุนที่ตัวช่วยสั่ง (rad/s),       -- α╕êα╕╕α╕öα╣Çα╕úα╕┤α╣êα╕íα╕Ñα╕öα╕íα╕╕α╕íα╣Çα╕Ñα╕╡α╣ëα╕óα╕ºα╕òα╕▓α╕íα╕äα╕ºα╕▓α╕íα╣Çα╕úα╣çα╕º
 
 	-- α╕ƒα╕┤α╕¬α╕┤α╕üα╕¬α╣îα╕Öα╣ëα╕│α╕½α╕Öα╕▒α╕üα╣üα╕Ñα╕░α╣üα╕úα╕çα╣éα╕Öα╣ëα╕íα╕ûα╣êα╕ºα╕ç (Weight & Gravity Balance)
 	Weight           = 1350,      -- α╕Öα╣ëα╕│α╕½α╕Öα╕▒α╕üα╕òα╕▒α╕ºα╕úα╕û 1,450 kg (α╣üα╕Öα╣êα╕Ö α╕½α╕Öα╕▒α╕üα╣üα╕Öα╣êα╕Ö α╣äα╕íα╣êα╣Çα╕Üα╕▓α╣Çα╕¢α╣çα╕Öα╕üα╕úα╕░α╕öα╕▓α╕⌐)
@@ -160,7 +182,7 @@ local Tune = {}
 
 	--Aesthetics	
 	Tune.SusVisible		= false			-- Suspension Visible
-	Tune.SpringsVisible	= false			-- Springs Visible
+	Tune.SpringsVisible	= true			-- Springs Visible
 	Tune.SusRadius		= 0.2			-- Spring Coil Radius
 	Tune.SusThickness	= 0.1			-- Spring Coil Thickness
 	Tune.SusColor		= "Bright red"	-- Spring Color [BrickColor]
@@ -188,7 +210,28 @@ local Tune = {}
 	
 	-- Steer Decay
 	Tune.SteerDecay			= Config.SteerDecaySpeed		-- Speed of gradient cutoff (in km/h)
-	Tune.SteerSpeedDecay	= Config.SteerDecaySpeed		-- Speed of gradient cutoff of steering speed (in km/h)
+	Tune.SteerSpeedDecay	= Config.SteerDecaySpeed
+Tune.ArcadeSteering				= Config.ArcadeSteering
+Tune.ArcadeSteerLowSpeedDegPerSec	= Config.ArcadeSteerLowSpeedDegPerSec
+Tune.ArcadeSteerHighSpeedDegPerSec	= Config.ArcadeSteerHighSpeedDegPerSec
+Tune.ArcadeSteerFullSpeedKmh		= Config.ArcadeSteerFullSpeedKmh
+Tune.ArcadeSteerMinMoveStudsPerSec	= Config.ArcadeSteerMinMoveStudsPerSec
+Tune.ArcadeSteerFullMoveStudsPerSec	= Config.ArcadeSteerFullMoveStudsPerSec
+Tune.ArcadeSteerResponse			= Config.ArcadeSteerResponse
+Tune.ArcadeSteerReleaseDamping		= Config.ArcadeSteerReleaseDamping
+Tune.ArcadeVelocityFollow			= Config.ArcadeVelocityFollow
+Tune.ArcadeLateralGrip			= Config.ArcadeLateralGrip
+Tune.ArcadeRollStability			= Config.ArcadeRollStability
+Tune.ArcadeRollDamping			= Config.ArcadeRollDamping
+Tune.ArcadeVisualWheelAngleLow	= Config.ArcadeVisualWheelAngleLow
+Tune.ArcadeVisualWheelAngleHigh	= Config.ArcadeVisualWheelAngleHigh
+Tune.CurbRecoveryGroundProbe		= Config.CurbRecoveryGroundProbe
+Tune.CurbRecoveryDuration		= Config.CurbRecoveryDuration
+Tune.CurbRecoveryMinimumSpeed	= Config.CurbRecoveryMinimumSpeed
+Tune.CurbRecoveryRollStrength		= Config.CurbRecoveryRollStrength
+Tune.CurbRecoveryPitchStrength	= Config.CurbRecoveryPitchStrength
+Tune.CurbRecoveryDamping			= Config.CurbRecoveryDamping
+Tune.CurbRecoveryMaxAngularSpeed	= Config.CurbRecoveryMaxAngularSpeed		-- Speed of gradient cutoff of steering speed (in km/h)
 	Tune.MinSteer			= Config.SteerAtTopSpeed		-- Minimum steering angle at max steer decay (in percent)
 	Tune.MinSteerSpeed		= 75		-- Minimum steering speed at max decay (in percent)
 	Tune.MSteerExp			= 1			-- Mouse steering exponential degree
@@ -552,4 +595,5 @@ local Tune = {}
 	}
 
 return Tune
+
 

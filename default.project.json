@@ -11,7 +11,7 @@
         "VehicleSystems": {
           "$path": "src/TeslaRoadster/VehicleSystems.server.luau"
         },
-        "Hoki-Chassis Tune": {
+        "A-Chassis Tune": {
           "$path": "src/TeslaRoadster/A-Chassis Tune"
         },
         "CarStatusGui": {

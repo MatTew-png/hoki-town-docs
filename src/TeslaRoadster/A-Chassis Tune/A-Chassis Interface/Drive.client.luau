@@ -18,20 +18,100 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer :: Player
 local mouse = player:GetMouse()
 
-local car = script.Parent.Car.Value
-local values = script.Parent.Values
-local tuneFolder = car:FindFirstChild("Hoki-Chassis Tune") or car:FindFirstChild("A-Chassis Tune") or car:WaitForChild("Hoki-Chassis Tune", 5) or car:WaitForChild("A-Chassis Tune", 5)
-
-local _Tune = require(tuneFolder)
-local ArcadeJumpRemote = tuneFolder:WaitForChild("ArcadeJumpRequest", 5)
-local Units = require(tuneFolder.README.Units)
-local VirtualInput = script:FindFirstChild("VirtualInput") :: BindableEvent?
-if not VirtualInput then
-	local be = Instance.new("BindableEvent")
-	be.Name = "VirtualInput"
-	be.Parent = script
-	VirtualInput = be
+local carVal = script.Parent:WaitForChild("Car", 5) :: ObjectValue?
+local car = carVal and carVal.Value
+if not car then
+	local startWait = os.clock()
+	while not car and (os.clock() - startWait) < 3 do
+		task.wait(0.05)
+		car = carVal and carVal.Value
+	end
 end
+if not car then
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum and hum.SeatPart and hum.SeatPart:IsA("VehicleSeat") then
+		car = hum.SeatPart:FindFirstAncestorOfClass("Model")
+	end
+	if not car then
+		car = workspace:FindFirstChild("TeslaRoadster")
+	end
+end
+
+local values = script.Parent:WaitForChild("Values", 5)
+local tuneFolder = car and car:WaitForChild("A-Chassis Tune", 5)
+local _Tune = tuneFolder and require(tuneFolder)
+local ArcadeJumpRemote = tuneFolder and tuneFolder:WaitForChild("ArcadeJumpRequest", 5)
+local Units = tuneFolder and require(tuneFolder.README.Units)
+print(">>> [DRIVE CLIENT ACTIVE] Drive.client.luau initialized for car: " .. tostring(car))
+
+-- ============================================================================
+-- DYNAMIC MULTI-VEHICLE TIRE SMOKE RIG (Universal across all vehicle models)
+-- Automatically computes wheel ground contact offsets relative to DriveSeat
+-- ============================================================================
+local function ensureMultiVehicleSmokeRig()
+	local wheelsModel = car:FindFirstChild("Wheels")
+	local seat = car:FindFirstChild("DriveSeat")
+	if not wheelsModel or not seat then return end
+
+	for _, w in ipairs(wheelsModel:GetChildren()) do
+		if w:IsA("BasePart") then
+			local attName = w.Name .. "_SmokeAtt"
+			local att = seat:FindFirstChild(attName)
+			if not att then
+				att = Instance.new("Attachment")
+				att.Name = attName
+				local rel = seat.CFrame:PointToObjectSpace(w.Position)
+				local halfH = w.Size.Y * 0.5
+				local trailZ = rel.Z > 0 and 0.4 or -0.4
+				att.Position = Vector3.new(rel.X, rel.Y - halfH + 0.15, rel.Z + trailZ)
+				att.Parent = seat
+			end
+
+			local pe = att:FindFirstChild("TireSmoke")
+			if not pe then
+				pe = Instance.new("ParticleEmitter")
+				pe.Name = "TireSmoke"
+				pe.Texture = "rbxasset://textures/particles/smoke_main.dds"
+				pe.Color = ColorSequence.new(Color3.fromRGB(240, 240, 245), Color3.fromRGB(200, 200, 210))
+				pe.Size = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.9),
+					NumberSequenceKeypoint.new(0.35, 2.8),
+					NumberSequenceKeypoint.new(1.0, 5.2)
+				})
+				pe.Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.35),
+					NumberSequenceKeypoint.new(0.6, 0.65),
+					NumberSequenceKeypoint.new(1.0, 1.0)
+				})
+				pe.Lifetime = NumberRange.new(0.6, 1.2)
+				pe.Speed = NumberRange.new(1.2, 2.5)
+				pe.Drag = 3.5
+				pe.Acceleration = Vector3.new(0, 1.2, 0)
+				pe.SpreadAngle = Vector2.new(20, 20)
+				pe.Orientation = Enum.ParticleOrientation.FacingCamera
+				pe.EmissionDirection = Enum.NormalId.Top
+				pe.Enabled = false
+				pe.Parent = att
+			end
+		end
+	end
+end
+task.spawn(ensureMultiVehicleSmokeRig)
+
+local VirtualInput = script:FindFirstChild("VirtualInput") or Instance.new("BindableEvent")
+
+local RemoteThrottle = script.Parent:FindFirstChild("RemoteThrottle")
+if not RemoteThrottle then
+	RemoteThrottle = Instance.new("RemoteEvent")
+	RemoteThrottle.Name = "RemoteThrottle"
+	RemoteThrottle.Parent = script.Parent
+end
+RemoteThrottle.OnClientEvent:Connect(function(throt: number?, steer: number?, brake: number?)
+	if throt ~= nil then _IThrot = throt end
+	if steer ~= nil then _GSteerT = steer end
+	if brake ~= nil then _IBrake = brake end
+end)
 
 if _Tune.Mobile then
 	player.PlayerGui.ScreenOrientation = Enum.ScreenOrientation.LandscapeSensor
@@ -102,7 +182,7 @@ local ESCTrackerFolder = values.ESCTracker
 local WheelSpeedsFolder = values.WheelSpeeds
 
 -- Status Vars
-local _IsOn = _Tune.AutoStart and (_Tune.Engine or _Tune.Electric)
+local _IsOn = _Tune.AutoStart and true or (_Tune.Engine or _Tune.Electric)
 local IsOnValue = script.Parent.IsOn
 IsOnValue.Value = _IsOn
 IsOnValue.Changed:Connect(function(value)
@@ -132,9 +212,12 @@ end)
 
 local _MSteer = false
 local MouseSteerValue = values.MouseSteerOn
-MouseSteerValue.Value = _MSteer
+MouseSteerValue.Value = false
 MouseSteerValue.Changed:Connect(function(value)
-	_MSteer = value
+	_MSteer = false
+	if value then
+		MouseSteerValue.Value = false
+	end
 end)
 
 -- Status Vars
@@ -160,13 +243,13 @@ local _ClutchModulate = 0
 
 local _RPM = _Tune.AutoStart and _Tune.IgnitionRPM or 0
 local _OutTorque = 0
-local _CGear = ParkingGearOffset == 1 and -2 or 0
+local _CGear = ParkingGearOffset == 1 and -2 or (_Tune.AutoStart and 1 or 0)
 local _ShiftUp = false
 local _ShiftDn = false
 local _Shifting = false
 local _spLimit = 0
 
-local engine = tuneFolder.README:FindFirstChild("CustomEngine") and require(tuneFolder.README:FindFirstChild("CustomEngine")) or nil
+local engine = car["A-Chassis Tune"].README:FindFirstChild("CustomEngine") and require(car["A-Chassis Tune"].README:FindFirstChild("CustomEngine")) or nil
 
 local _Boost = 0
 local _TBoost = 0
@@ -194,7 +277,14 @@ local _RevLimiting = false
 
 local _SteerL = false
 local _SteerR = false
-local _PBrake = tuneFolder["A-Chassis Interface"].Values.PBrake.Value
+local _PBrake = not _Tune.AutoStart and car["A-Chassis Tune"]["A-Chassis Interface"].Values.PBrake.Value or false
+local _SpaceHeld = false
+local _TapDriftActive = false
+local _PrevIBrake = 0
+local _BrakePressTimestamp = 0
+local _EligibleForTapDrift = false
+local _DriftEndTime = 0
+local _StraightenTimer = 0
 
 local _TCSTracker = {}
 local _TCS = _Tune.TCSEnabled
@@ -214,6 +304,10 @@ local _ESCAmt = 0
 local _CS = _Tune.CSEnabled
 local _CSActive = false
 local _CSAmt = 0
+local _MidAirActive = false
+local _FrontGroundedCount = 2
+local _RearGroundedCount = 2
+local _WheelGrounded = { FL = true, FR = true, RL = true, RR = true }
 
 local _FlipWait = tick()
 local _FlipDB = false
@@ -230,10 +324,10 @@ local _Acceleration = Vector3.new()
 local _Velocity = Vector3.new()
 local _Center = CFrame.new()
 
-local _InitialAutoShiftVers = _Tune.AutoShiftVers
+_Tune.AutoShiftVers = "Old"; local _InitialAutoShiftVers = "Old"
 
-local weightBrick = car:WaitForChild("Body"):WaitForChild("#Weight") :: Part
-local driveSeat = car:WaitForChild("DriveSeat") :: VehicleSeat
+local weightBrick = (car.Body:FindFirstChild("#Weight") or car.DriveSeat) :: BasePart
+local driveSeat = car.DriveSeat :: VehicleSeat
 
 -- Initialize Client
 local FWheelCount = 0
@@ -330,14 +424,13 @@ for name, data in Wheels do
 end
 
 -- /// <summary>Detects the leading and trailing axle at a curb and gives each one a single damped lift.</summary>
-local curbAssistForce = weightBrick:WaitForChild("CurbAssistForce") :: VectorForce
+local curbAssistForce = (car.Body:FindFirstChild("CurbAssistForce", true) or (weightBrick and weightBrick:FindFirstChild("CurbAssistForce"))) :: VectorForce?
 local curbAssistRaycastParams = RaycastParams.new()
 curbAssistRaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 curbAssistRaycastParams.FilterDescendantsInstances = { car }
 curbAssistRaycastParams.RespectCanCollide = true
 
 local nextCurbAssistAt = 0
-local curbRecoveryUntil = 0
 local curbAxleStates = {
 	Front = { ActiveObstacle = nil, LastDetectionAt = 0, HopStartedAt = 0, HopTriggered = true, NextHopAt = 0 },
 	Rear = { ActiveObstacle = nil, LastDetectionAt = 0, HopStartedAt = 0, HopTriggered = true, NextHopAt = 0 },
@@ -346,14 +439,15 @@ local curbAxleStates = {
 }
 
 local function UpdateCurbAssist(deltaTime: number)
-	if not _Tune.CurbAssistEnabled then
-		curbAssistForce.Force = Vector3.zero
+	if not _Tune.CurbAssistEnabled or not curbAssistForce then
+		if curbAssistForce then curbAssistForce.Force = Vector3.zero end
 		return
 	end
 
 	local detections = { Front = nil, Rear = nil, Left = nil, Right = nil }
 	local approachSpeed = 0
-	local driveDirection = (_IThrot > 0.05 or driveSeat.ThrottleFloat > 0.05) and 1 or (driveSeat.ThrottleFloat < -0.05 and -1 or 0)
+	local throttle = driveSeat.ThrottleFloat
+	local driveDirection = throttle > 0.05 and 1 or (throttle < -0.05 and -1 or 0)
 
 	if driveDirection ~= 0 then
 		local lookVector = driveSeat.CFrame.LookVector
@@ -410,7 +504,7 @@ local function UpdateCurbAssist(deltaTime: number)
 	end
 
 	-- Probe a low edge on either side while the car steers or slides toward it.
-	local steer = math.abs(_GSteerT) >= 0.05 and _GSteerT or driveSeat.SteerFloat
+	local steer = driveSeat.SteerFloat
 	local planarVelocity = Vector3.new(_Velocity.X, 0, _Velocity.Z)
 	local sideVelocity = planarVelocity:Dot(driveSeat.CFrame.RightVector)
 	local sideSign = math.abs(steer) >= 0.2 and math.sign(steer) or (math.abs(sideVelocity) >= 4 and math.sign(sideVelocity) or 0)
@@ -441,7 +535,6 @@ local function UpdateCurbAssist(deltaTime: number)
 
 	local now = os.clock()
 	local hopAcceleration = 0
-	local climbAcceleration = 0
 	local stepCrossingActive = false
 	for axleName, state in curbAxleStates do
 		local detection = detections[axleName]
@@ -466,7 +559,6 @@ local function UpdateCurbAssist(deltaTime: number)
 			)
 			if not state.HopTriggered and detection.Distance <= triggerDistance and now >= nextCurbAssistAt then
 				state.HopStartedAt = now
-				state.HopStepHeight = detection.StepHeight
 				state.HopTriggered = true
 				state.NextHopAt = now + 0.6
 				nextCurbAssistAt = now + 0.3
@@ -479,15 +571,6 @@ local function UpdateCurbAssist(deltaTime: number)
 
 			if detection.Distance <= math.max(0.8, approachSpeed * 0.12) then
 				stepCrossingActive = true
-			end
-
-			-- Add a short, height-scaled lift only as a wheel reaches a climbable edge.
-			if approachSpeed >= 5 and detection.Distance < _Tune.CurbAssistClimbRange then
-				local heightFactor = math.clamp((detection.StepHeight - 0.25) / (_Tune.CurbAssistMaxStep - 0.25), 0, 1)
-				local proximity = math.clamp(1 - detection.Distance / _Tune.CurbAssistClimbRange, 0, 1)
-				local upwardSpeed = weightBrick.AssemblyLinearVelocity.Y
-				local speedRoom = math.clamp((_Tune.CurbAssistClimbMaxUpwardSpeed - upwardSpeed) / _Tune.CurbAssistClimbMaxUpwardSpeed, 0, 1)
-				climbAcceleration = math.max(climbAcceleration, _Tune.CurbAssistClimbAcceleration * heightFactor * proximity * proximity * speedRoom)
 			end
 		elseif now - state.LastDetectionAt > 0.12 then
 			state.ActiveObstacle = nil
@@ -504,8 +587,7 @@ local function UpdateCurbAssist(deltaTime: number)
 				0,
 				1
 			)
-			local heightFactor = math.clamp((state.HopStepHeight or 0) / _Tune.CurbAssistMaxStep, 0.2, 1)
-			hopAcceleration = math.max(hopAcceleration, _Tune.CurbAssistAcceleration * heightFactor * pulse * speedRoom)
+			hopAcceleration = math.max(hopAcceleration, _Tune.CurbAssistAcceleration * pulse * speedRoom)
 		elseif state.HopStartedAt > 0 then
 			state.HopStartedAt = 0
 		end
@@ -515,10 +597,7 @@ local function UpdateCurbAssist(deltaTime: number)
 		end
 	end
 
-	curbAssistForce.Force = Vector3.yAxis * weightBrick.AssemblyMass * math.max(hopAcceleration, climbAcceleration)
-	if stepCrossingActive and approachSpeed >= _Tune.CurbRecoveryMinimumSpeed then
-		curbRecoveryUntil = math.max(curbRecoveryUntil, now + _Tune.CurbRecoveryDuration)
-	end
+	if curbAssistForce then curbAssistForce.Force = Vector3.yAxis * weightBrick.AssemblyMass * hopAcceleration end
 	if stepCrossingActive then
 		local carCFrame = weightBrick.CFrame
 		local localAngularVelocity = carCFrame:VectorToObjectSpace(weightBrick.AssemblyAngularVelocity)
@@ -536,7 +615,7 @@ end
 driveSeat.ChildRemoved:Connect(function(child: Instance) 
 	if child.Name=="SeatWeld" and child:IsA("Weld") then
 
-		curbAssistForce.Force = Vector3.zero
+		if curbAssistForce then curbAssistForce.Force = Vector3.zero end
 		for _, state in curbAxleStates do
 			state.ActiveObstacle = nil
 			state.LastDetectionAt = 0
@@ -570,7 +649,7 @@ driveSeat.ChildRemoved:Connect(function(child: Instance)
 			_CGear = -2
 		end
 
-		local values = tuneFolder["A-Chassis Interface"].Values
+		local values = car["A-Chassis Tune"]["A-Chassis Interface"].Values
 		values.InputThrottle.Value = 0
 		values.Throttle.Value = 0
 		values.InputBrake.Value = 0
@@ -604,10 +683,7 @@ driveSeat.ChildRemoved:Connect(function(child: Instance)
 		end
 
 		-- Tell server to remove
-		local shutdown = tuneFolder:FindFirstChild("Shutdown")
-		if shutdown then
-			shutdown:FireServer()
-		end
+		car["A-Chassis Tune"].Shutdown:FireServer()
 	end
 end)
 
@@ -653,6 +729,9 @@ end
 
 -- Input Handler
 local function DealWithInput(input: InputObject, gameProcessed: boolean)
+	if input.KeyCode == Enum.KeyCode.Unknown and not (input.UserInputType and string.find(input.UserInputType.Name, "Gamepad")) then
+		return
+	end
 	if not ChatInputBarConfiguration.IsFocused and not UserInputService:GetFocusedTextBox() and not _InControls then
 		-- Shift Down [Manual Transmission]
 		if (input.KeyCode ==_CTRL["ContlrShiftDown"] or (_MSteer and input.KeyCode==_CTRL["MouseShiftDown"]) or ((not _MSteer) and input.KeyCode==_CTRL["ShiftDown"])) and ((_IsOn and ((_TMode=="Auto" and _CGear<=1) and _Tune.AutoShiftVers == "New") or _TMode=="Semi") or _TMode=="Manual") and input.UserInputState == Enum.UserInputState.Begin then
@@ -728,10 +807,10 @@ local function DealWithInput(input: InputObject, gameProcessed: boolean)
 				_SteerR = false
 			end
 
-			-- Toggle Mouse Controls
-		elseif input.KeyCode ==_CTRL["ToggleMouseDrive"] then
+			-- Toggle Mouse Controls (Disabled so mouse clicks never disable W/A/S/D)
+		elseif false and input.KeyCode ==_CTRL["ToggleMouseDrive"] then
 			if input.UserInputState == Enum.UserInputState.End then
-				MouseSteerValue.Value = not _MSteer
+				MouseSteerValue.Value = false
 				_IThrot = 0
 				_IBrake = 0
 				_GSteerT = 0
@@ -801,21 +880,10 @@ local function DealWithInput(input: InputObject, gameProcessed: boolean)
 end
 
 UserInputService.InputBegan:Connect(DealWithInput)
-local arcadeJumpConnection = UserInputService.InputBegan:Connect(function(input)
-	if input.KeyCode ~= Enum.KeyCode.Space then return end
-	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if humanoid and car.DriveSeat.Occupant == humanoid then
-		ArcadeJumpRemote:FireServer()
-	end
-end)
-script.Destroying:Connect(function()
-	arcadeJumpConnection:Disconnect()
-end)
+-- ArcadeJump on Spacebar removed
 UserInputService.InputChanged:Connect(DealWithInput)
 UserInputService.InputEnded:Connect(DealWithInput)
-if VirtualInput then
-	VirtualInput.Event:Connect(DealWithInput)
-end
+VirtualInput.Event:Connect(DealWithInput)
 
 local function DealWithMobileInput()
 	local mobile = script.Parent.Mobile
@@ -912,11 +980,18 @@ if _Tune.Mobile then
 	DealWithMobileInput()
 end
 
--- Throttle and Brake Input Smoothing
+-- Throttle and Brake Input Smoothing + CDT Tap-to-Drift Engine
 local function Inputs(dt: number)
 	local deltaTime = dt * 60
-	local desiredThrottle = if car:GetAttribute("VehiclePowerDisabled") == true then 0 else _IThrot
-	local desiredBrake = _IBrake
+	local seatThrot = car:FindFirstChild("DriveSeat") and car.DriveSeat.ThrottleFloat or 0
+	local seatSteer = car:FindFirstChild("DriveSeat") and car.DriveSeat.SteerFloat or 0
+
+	local desiredThrottle = math.max(_IThrot, math.clamp(seatThrot, 0, 1))
+	local desiredBrake = math.max(_IBrake, math.clamp(-seatThrot, 0, 1))
+
+	if _GSteerT == 0 and math.abs(seatSteer) > 0.05 then
+		_GSteerT = seatSteer
+	end
 	if _InThrot <= desiredThrottle then
 		_InThrot = math.min(desiredThrottle,_InThrot+(_Tune.ThrotAccel*deltaTime))
 	else
@@ -926,6 +1001,70 @@ local function Inputs(dt: number)
 		_InBrake = math.min(desiredBrake,_InBrake+(_Tune.BrakeAccel*deltaTime))
 	else
 		_InBrake = math.max(desiredBrake,_InBrake-(_Tune.BrakeDecel*deltaTime))
+	end
+
+	-- Immediate launch: release parking brake on throttle or brake
+	if _PBrake and not _SpaceHeld and not _TapDriftActive and (_InThrot > 0.05 or _IBrake > 0.05 or desiredThrottle > 0.05 or desiredBrake > 0.05) then
+		_PBrake = false
+	end
+
+	-- CDT Tap-to-Drift Architecture (Fixed _GSteerC & Non-Blocking Service Brake):
+	local currentBrake = _IBrake
+	local now = os.clock()
+	local forwardSpeed = _Velocity:Dot(car.DriveSeat.CFrame.LookVector)
+	local isSteering = (math.abs(_GSteerT) > 0.15 or _SteerL or _SteerR or math.abs(_GSteerC) > 0.10)
+
+	-- Edge 1: Brake Pressed (0 -> >=0.1)
+	if _PrevIBrake < 0.1 and currentBrake >= 0.1 then
+		_BrakePressTimestamp = now
+		local _tapAllowed = (_Tune.TapDriftEnabled ~= false)
+		if car:GetAttribute("TapDriftEnabled") ~= nil then
+			_tapAllowed = (car:GetAttribute("TapDriftEnabled") == true)
+		end
+		local _minSpeed = _Tune.TapDriftMinSpeed or 16
+		if _tapAllowed and forwardSpeed > _minSpeed and isSteering then
+			_EligibleForTapDrift = true
+		else
+			_EligibleForTapDrift = false
+		end
+	-- Edge 2: Brake Released (>=0.1 -> <0.1)
+	elseif _PrevIBrake >= 0.1 and currentBrake < 0.1 then
+		local holdDuration = now - _BrakePressTimestamp
+		local _tapMaxHold = _Tune.TapDriftTapDuration or 0.35
+		local _minSpeedCheck = (_Tune.TapDriftMinSpeed or 16) - 3
+		if _EligibleForTapDrift and holdDuration <= _tapMaxHold and forwardSpeed > _minSpeedCheck and isSteering then
+			-- Quick Tap confirmed! Sustain drift powerslide through the apex
+			_TapDriftActive = true
+			_DriftEndTime = now + (_Tune.TapDriftMaxDuration or 1.25)
+			_StraightenTimer = 0
+		else
+			-- Held longer than tap (normal stopping brake), terminate drift
+			_TapDriftActive = false
+		end
+		_EligibleForTapDrift = false
+	end
+	_PrevIBrake = currentBrake
+
+	-- Active Drift Lifecycle Management
+	if _TapDriftActive then
+		-- If player presses brake again to slow down/stop, immediately abort drift and give 100% brakes
+		if currentBrake >= 0.1 then
+			_TapDriftActive = false
+		-- If vehicle speed dropped too low, abort drift
+		elseif forwardSpeed < 12 then
+			_TapDriftActive = false
+		-- If max drift duration expired
+		elseif now > _DriftEndTime then
+			_TapDriftActive = false
+		-- If player straightened out steering after the corner
+		elseif not isSteering then
+			_StraightenTimer = _StraightenTimer + dt
+			if _StraightenTimer > 0.22 then
+				_TapDriftActive = false
+			end
+		else
+			_StraightenTimer = 0
+		end
 	end
 end
 
@@ -957,7 +1096,6 @@ local function Steering(dt: number)
 		end
 		return
 	end
-
 	local deltaTime = dt * 60
 
 	local SteerOuter = _Tune.SteerOuter
@@ -1075,18 +1213,31 @@ local function Auto()
 	local fFD = _Tune.FinalDrive * _Tune.FDMult
 	local fFDr = fFD * 30 / math.pi
 
-	if _Tune.AutoShiftVers == "Old" and (_CGear == 0 or (ParkingGearEnabled and _CGear == -2)) then _CGear = 1 _ClPressing = false end
+	local forwardSpeed = _Velocity:Dot(car.DriveSeat.CFrame.LookVector)
 
-	-- Old A-Chassis auto reverse only engages from first gear. Return to first
-	-- after stopping so braking can reliably select reverse from any forward gear.
-	if _Tune.AutoShiftVers == "Old" and _CGear > 1 and _Velocity.Magnitude < 5 and not _Shifting and not _ShiftUp and not _ShiftDn then
+	if _Tune.AutoShiftVers == "Old" and (_CGear == 0 or (ParkingGearEnabled and _CGear == -2)) then
+		if _IBrake > 0.1 and _IThrot < 0.1 then
+			_CGear = -1
+		else
+			_CGear = 1
+		end
+		_ClPressing = false
+	end
+
+	-- Return to 1st gear when slowed down so reverse or launch is always ready immediately
+	if _Tune.AutoShiftVers == "Old" and _CGear > 1 and _Velocity.Magnitude < 10 and not _Shifting and not _ShiftUp and not _ShiftDn then
 		_CGear = 1
 		_ClPressing = false
 	end
 
 	if _CGear >= 1 then
-		if (_CGear==1 and _InBrake > 0 and _Velocity.Magnitude < 5) and _Tune.AutoShiftVers == "Old" then
-			_CGear = -1 _ClPressing = false
+		-- Engage Reverse smoothly as soon as forward speed drops low and player holds S (Brake) without W
+		if (_IBrake > 0.1 and _IThrot < 0.1 and forwardSpeed < 8) and _Tune.AutoShiftVers == "Old" then
+			_CGear = -1
+			_ClPressing = false
+			_Shifting = false
+			_ShiftUp = false
+			_ShiftDn = false
 		elseif _Velocity.Magnitude > 5 and _Tune.ClutchType ~= "CVT" then
 			if _Tune.AutoShiftMode == "RPM" then
 				if _RPM>(_Tune.ShiftRPM+_Tune.AutoUpThresh) then
@@ -1103,8 +1254,13 @@ local function Auto()
 			end
 		end
 	else
-		if (_InThrot > 0 and _Velocity.Magnitude < 5) and _Tune.AutoShiftVers == "Old" then
-			_CGear = 1 _ClPressing = false
+		-- Engage Forward 1st gear immediately when player presses W (Throttle) from Reverse or Neutral
+		if (_IThrot > 0.1 and forwardSpeed > -14) and _Tune.AutoShiftVers == "Old" then
+			_CGear = 1
+			_ClPressing = false
+			_Shifting = false
+			_ShiftUp = false
+			_ShiftDn = false
 		end
 	end
 end
@@ -1219,7 +1375,7 @@ local function Engine(dt: number)
 	-- Old Auto uses S/IBrake as throttle while reversing and W/IThrot while moving forward.
 	local reversing = _Tune.AutoShiftVers == "Old" and _CGear == -1 and _TMode == "Auto"
 	local driveCommand = reversing and _IBrake or _IThrot
-	if _PBrake and driveCommand > 0.05 then
+	if _PBrake and not _SpaceHeld and not _TapDriftActive and (driveCommand > 0.05 or _InThrot > 0.05 or _InBrake > 0.05 or _IThrot > 0.05 or _IBrake > 0.05) then
 		_PBrake = false
 	end
 
@@ -1327,8 +1483,8 @@ local function Engine(dt: number)
 		if not _ClPressing and not _Shifting then _Clutch = 0 else _Clutch = 1 end
 	end
 
-	-- Things that apply the clutch
-	if _AutoClutch and (_Starting or (_Tune.RemoveCreep and _RPM < _Tune.IdleRPM+(_Tune.IdlePadding or 0) and _IThrot < .1) or (_RevLimiting and _Tune.OverRev == false)) then
+	-- Things that apply the clutch (uses driveCommand so Reverse S is never cut!)
+	if _AutoClutch and (_Starting or (_Tune.RemoveCreep and _RPM < _Tune.IdleRPM+(_Tune.IdlePadding or 0) and driveCommand < .05) or (_RevLimiting and _Tune.OverRev == false)) then
 		_Clutch = 1
 	end
 
@@ -1430,9 +1586,9 @@ local function Engine(dt: number)
 		local brake = _GBrake
 
 		local clutch=1
-		if _ClPressing or (_AutoClutch and (_Starting or (_Tune.RemoveCreep and _RPM < _Tune.IdleRPM+(_Tune.IdlePadding or 0) and _IThrot < .1))) then 
+		if _ClPressing or (_AutoClutch and (_Starting or (_Tune.RemoveCreep and _RPM < _Tune.IdleRPM+(_Tune.IdlePadding or 0) and driveCommand < .05))) then 
 			clutch=0 
-		end -- for some reason, the car still creeps forward when starting the car if i don't do this
+		end
 
 		-- Apply ESC
 		local tqESC = 0
@@ -1505,30 +1661,52 @@ local function Engine(dt: number)
 			_TCSActive = tqTCS < 1 or _TCSActive
 			_TCSTracker[data.Name] = 1-tqTCS
 
-			-- Update Forces
-			local tqOUT = (tq*1.356*Units.Torque_nm*throt*tqTCS*on*clutch) + (_FlywheelEnergy/#Drive)
+			-- Update Forces (only add flywheel energy when actively throttling and not braking)
+			local flywheelAdd = (throt > 0.05 and brake < 0.05) and (_FlywheelEnergy/#Drive) or 0
+			local tqOUT = (tq*1.356*Units.Torque_nm*throt*tqTCS*on*clutch) + flywheelAdd
+			if brake > 0.05 and throt <= 0.05 then
+				tqOUT = 0
+			end
 			if car:GetAttribute("VehiclePowerDisabled") == true then
 				tqOUT = 0
 			end
 			-- convert lb-ft to nm to roblox stuff
 			-- if it reaches an absurdly high number, set it to 0 to try and prevent physics death
 
-			if data.Name=='RR' then
-				data.AV.MotorMaxTorque=tqOUT*RRdiffMult
-			elseif data.Name=='RL' then
-				data.AV.MotorMaxTorque=tqOUT*RLdiffMult
-			elseif data.Name=='FR' then
-				data.AV.MotorMaxTorque=tqOUT*FRdiffMult
-			elseif data.Name=='FL' then
-				data.AV.MotorMaxTorque=tqOUT*FLdiffMult
+			-- CDT Tap-to-Drift & Spacebar Handbrake:
+			local isRear = (data.Name == 'RR' or data.Name == 'RL')
+			local handbrakeEngaged = _SpaceHeld or _TapDriftActive
+
+			if handbrakeEngaged and isRear then
+				if _SpaceHeld then
+					-- Spacebar on PC: Complete rear torque cut for sharp handbrake lock
+					data.AV.MotorMaxTorque = 0
+				else
+					-- Tap-to-Drift (CDT Arcade): Deliver 45% throttle torque to powerslide through the corner!
+					data.AV.MotorMaxTorque = (tqOUT * (_InThrot > 0.1 and (_Tune.TapDriftPowerRatio or 0.45) or 0))
+				end
 			else
-				data.AV.MotorMaxTorque=tqOUT
+				if data.Name=='RR' then
+					data.AV.MotorMaxTorque=tqOUT*RRdiffMult
+				elseif data.Name=='RL' then
+					data.AV.MotorMaxTorque=tqOUT*RLdiffMult
+				elseif data.Name=='FR' then
+					data.AV.MotorMaxTorque=tqOUT*FRdiffMult
+				elseif data.Name=='FL' then
+					data.AV.MotorMaxTorque=tqOUT*FLdiffMult
+				else
+					data.AV.MotorMaxTorque=tqOUT
+				end
 			end
 			data.AV.AngularVelocity = _spLimit * math.sign(_CGear)
+
+			-- Apply Brake Torques:
 			if data.isFront then
-				data.BV.MotorMaxTorque = (FBrakeForce*brake*tqABS) + (_Tune.EBrakeForce*clutch*((1-throt)*(_RPM/_Tune.Redline))) + (PBrakeForceF*PBrakeV)
+				local fEmergency = _SpaceHeld and 10000 or (_TapDriftActive and 3000 or 0)
+				data.BV.MotorMaxTorque = math.max((FBrakeForce*brake*tqABS) + (_Tune.EBrakeForce*clutch*((1-throt)*(_RPM/_Tune.Redline))) + (PBrakeForceF*PBrakeV), fEmergency)
 			else
-				data.BV.MotorMaxTorque = (RBrakeForce*brake*tqABS) + (_Tune.EBrakeForce*clutch*((1-throt)*(_RPM/_Tune.Redline))) + (PBrakeForceR*PBrakeV)
+				local rBrake = _SpaceHeld and 28000 or (_TapDriftActive and (_Tune.TapDriftRearBrake or 18000) or (PBrakeForceR * PBrakeV))
+				data.BV.MotorMaxTorque = (RBrakeForce*brake*tqABS) + (_Tune.EBrakeForce*clutch*((1-throt)*(_RPM/_Tune.Redline))) + rBrake
 			end
 		else -- luaint edit
 			data.AV.MotorMaxTorque=0
@@ -1538,6 +1716,99 @@ local function Engine(dt: number)
 			else
 				data.BV.MotorMaxTorque = (RBrakeForce*brake*tqABS) + (PBrakeForceR*PBrakeV)
 			end
+		end
+
+		-- Active Grounded Tire Smoke (DriveSeat Anchored) on Drift, Hard Cornering or Burnout
+		local seat = car.DriveSeat
+		local lateralSpeed = math.abs(_Velocity:Dot(seat.CFrame.RightVector))
+		local isDrifting = (_SpaceHeld or _TapDriftActive) and _Velocity.Magnitude > 10
+		local isHardSlide = lateralSpeed > 10 and _Velocity.Magnitude > 15
+		local isBurnoutOrLock = brake > 0.65 and _Velocity.Magnitude > 20
+
+		local isCarUpright = seat.CFrame.UpVector.Y > 0.35
+		local rearSmokeActive = isCarUpright and (not _MidAirActive) and (_RearGroundedCount and _RearGroundedCount >= 1) and (isDrifting or isHardSlide or isBurnoutOrLock)
+		local frontSmokeActive = isCarUpright and (not _MidAirActive) and (_FrontGroundedCount and _FrontGroundedCount >= 1) and (isHardSlide or (brake > 0.75 and _Velocity.Magnitude > 25))
+
+		-- Warm, Smooth Asphalt Tire Scrub (Fatigue-Free, Non-Piercing)
+		local tireScrub = seat:FindFirstChild("HokiTireScrub") or (function()
+			local s = Instance.new("Sound")
+			s.Name = "HokiTireScrub"
+			s.SoundId = "rbxassetid://112851268328371" -- Real organic asphalt friction by Detocoyote
+			s.Looped = true
+			s.Volume = 0
+			s.RollOffMaxDistance = 140
+			s.RollOffMinDistance = 10
+			s.RollOffMode = Enum.RollOffMode.InverseTapered
+			
+			-- Acoustic EQ: Cut piercing highs (-14dB), warm up low-end rubber body
+			local eq = Instance.new("EqualizerSoundEffect")
+			eq.Name = "WarmthEQ"
+			eq.LowGain = 2.5
+			eq.MidGain = -3.0
+			eq.HighGain = -14.0
+			eq.Parent = s
+
+			s.Parent = seat
+			s:Play()
+			return s
+		end)()
+
+		-- Clean up legacy harsh sounds if present
+		local legacy1 = seat:FindFirstChild("HokiTireScreech")
+		if legacy1 then legacy1:Stop() legacy1:Destroy() end
+		local legacy2 = seat:FindFirstChild("HokiTireSkid")
+		if legacy2 then legacy2:Stop() legacy2:Destroy() end
+
+		local speedStuds = _Velocity.Magnitude
+		local groundedTires = (_FrontGroundedCount or 0) + (_RearGroundedCount or 0)
+		local canMakeTireSound = isCarUpright and (not _MidAirActive) and (groundedTires >= 1) and (speedStuds > 18)
+
+		-- Only trigger when there is actual hard lateral slip (drifting or aggressive turn-in at high speed)
+		local cornerSlip = canMakeTireSound and (math.abs(_GSteerC) * math.clamp((speedStuds - 22) / 45, 0, 1)) or 0
+		local isHardTurning = cornerSlip > 0.28
+		local isLateralSliding = lateralSpeed > 9.0 and speedStuds > 20
+
+		local targetVol = 0
+		if canMakeTireSound then
+			if rearSmokeActive or frontSmokeActive or isDrifting or isHardSlide or isLateralSliding then
+				-- Controlled, non-fatiguing drift volume (max 0.26 instead of 0.75)
+				targetVol = math.clamp(0.18 + (lateralSpeed / 45) * 0.08, 0.16, 0.26)
+			elseif isHardTurning then
+				-- Subtle textured cornering cue (0.06 - 0.16)
+				targetVol = math.clamp((cornerSlip - 0.28) * 0.35, 0.06, 0.16)
+			elseif isBurnoutOrLock then
+				targetVol = 0.22
+			end
+		end
+
+		-- Gentle, smooth volume transitions (no abrupt jumps)
+		local fadeRate = (targetVol > tireScrub.Volume) and 9 or 7
+		tireScrub.Volume = tireScrub.Volume + (targetVol - tireScrub.Volume) * math.min(1, dt * fadeRate)
+		
+		-- Keep pitch warm and deep (0.92 - 1.02, never shrill)
+		local targetPitch = 0.94 + math.clamp(speedStuds / 240, 0, 0.06) + math.clamp(lateralSpeed / 70, 0, 0.04)
+		tireScrub.PlaybackSpeed = tireScrub.PlaybackSpeed + (targetPitch - tireScrub.PlaybackSpeed) * math.min(1, dt * 6)
+
+		local rrAtt = seat:FindFirstChild("RR_SmokeAtt")
+		local rlAtt = seat:FindFirstChild("RL_SmokeAtt")
+		local frAtt = seat:FindFirstChild("FR_SmokeAtt")
+		local flAtt = seat:FindFirstChild("FL_SmokeAtt")
+
+		if rrAtt and rrAtt:FindFirstChild("TireSmoke") then
+			rrAtt.TireSmoke.Enabled = rearSmokeActive and (_WheelGrounded["RR"] == true)
+			rrAtt.TireSmoke.Rate = (isDrifting or isHardSlide) and 75 or 40
+		end
+		if rlAtt and rlAtt:FindFirstChild("TireSmoke") then
+			rlAtt.TireSmoke.Enabled = rearSmokeActive and (_WheelGrounded["RL"] == true)
+			rlAtt.TireSmoke.Rate = (isDrifting or isHardSlide) and 75 or 40
+		end
+		if frAtt and frAtt:FindFirstChild("TireSmoke") then
+			frAtt.TireSmoke.Enabled = frontSmokeActive and (_WheelGrounded["FR"] == true)
+			frAtt.TireSmoke.Rate = 45
+		end
+		if flAtt and flAtt:FindFirstChild("TireSmoke") then
+			flAtt.TireSmoke.Enabled = frontSmokeActive and (_WheelGrounded["FL"] == true)
+			flAtt.TireSmoke.Rate = 45
 		end
 	end
 end
@@ -1672,7 +1943,7 @@ local function Flip()
 	if _FlipDB or (driveSeat.CFrame * CFrame.Angles(math.pi / 2, 0, 0)).LookVector.Y > 0.1 then
 		_FlipWait = tick()
 	else
-		if tick() - _FlipWait >= 3 then
+		if tick() - _FlipWait >= 1.2 then
 			_FlipDB = true
 			if _Tune.FlipType == "New" then
 				local gyro = driveSeat.Flip
@@ -1694,12 +1965,23 @@ local function Flip()
 	end
 end
 
+-- Mid-Air Control
+-- Mid-Air Control (declared at top for Engine smoke gate)
+local takeoffAssistUsed = false
+local allWheelsGroundedSince = 0
+local nextTakeoffAssistAt = 0
+local midAirRays = RaycastParams.new()
+midAirRays.FilterType = Enum.RaycastFilterType.Exclude
+midAirRays.FilterDescendantsInstances = {car}
+
 -- Direct yaw steering. Preserve pitch and roll from suspension, collisions, and air control.
+local curbRecoveryUntil = 0
 local arcadeYawCommand = 0
 local arcadeGroundedCount = 0
 local arcadeGroundNormal = Vector3.yAxis
 local rearLeftWheel = car.Wheels:FindFirstChild("RL")
 local rearRightWheel = car.Wheels:FindFirstChild("RR")
+
 local function ArcadeSteeringYaw(dt: number)
 	if not _Tune.ArcadeSteering or driveSeat.Occupant == nil then return end
 	if _MidAirActive then
@@ -1776,13 +2058,62 @@ local function ArcadeSteeringYaw(dt: number)
 	driveSeat.AssemblyAngularVelocity = angular
 end
 
--- Mid-Air Control
-local takeoffAssistUsed = false
-local allWheelsGroundedSince = 0
-local nextTakeoffAssistAt = 0
-local midAirRays = RaycastParams.new()
-midAirRays.FilterType = Enum.RaycastFilterType.Exclude
-midAirRays.FilterDescendantsInstances = {car}
+-- Brief anti-flip recovery after a fast curb climb. Ordinary ramp airtime is untouched.
+local function UpdateCurbRecovery(dt: number)
+	if not _Tune.CurbAssistEnabled then return end
+	local recoveryActive = os.clock() < curbRecoveryUntil
+	if not recoveryActive and arcadeGroundedCount < 1 then return end
+
+	local floorHit = workspace:Raycast(
+		weightBrick.Position,
+		-Vector3.yAxis * (_Tune.CurbRecoveryGroundProbe or 5),
+		midAirRays
+	)
+	if not floorHit or floorHit.Normal.Y < 0.45 then return end
+
+	local carCFrame = driveSeat.CFrame
+	local up = carCFrame.UpVector
+	local groundNormal = floorHit.Normal
+	if up:Dot(groundNormal) < 0.15 then return end
+
+	local forward = carCFrame.LookVector
+	local right = carCFrame.RightVector
+	forward = Vector3.new(forward.X, 0, forward.Z)
+	right = Vector3.new(right.X, 0, right.Z)
+	if forward.Magnitude < 0.1 or right.Magnitude < 0.1 then return end
+	forward = forward.Unit
+	right = right.Unit
+
+	local correctionAxis = up:Cross(groundNormal)
+	local rollError = correctionAxis:Dot(forward)
+	local pitchError = correctionAxis:Dot(right)
+	local current = driveSeat.AssemblyAngularVelocity
+	local rollRate = current:Dot(forward)
+	local pitchRate = current:Dot(right)
+	if not recoveryActive then
+		local velocity = driveSeat.AssemblyLinearVelocity
+		local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
+		local riskyRoll = math.abs(rollRate) >= 1.8 or math.abs(rollError) >= math.sin(math.rad(20))
+		local riskyPitch = math.abs(pitchRate) >= 2.5 and math.abs(pitchError) >= math.sin(math.rad(25))
+		if speed < (_Tune.CurbRecoveryMinimumSpeed or 35) or not (riskyRoll or riskyPitch) then return end
+		curbRecoveryUntil = os.clock() + (_Tune.CurbRecoveryDuration or 0.5)
+	end
+	if math.abs(rollError) < math.sin(math.rad(8))
+		and math.abs(pitchError) < math.sin(math.rad(30))
+		and math.abs(rollRate) < 1.2
+		and math.abs(pitchRate) < 1.2 then
+		return
+	end
+
+	local maxRate = math.max(_Tune.CurbRecoveryMaxAngularSpeed or 3, 0)
+	local rollTarget = math.clamp(rollError * (_Tune.CurbRecoveryRollStrength or 8), -maxRate, maxRate)
+	local pitchExcess = math.sign(pitchError) * math.max(math.abs(pitchError) - math.sin(math.rad(25)), 0)
+	local pitchTarget = math.clamp(pitchExcess * (_Tune.CurbRecoveryPitchStrength or 4), -maxRate, maxRate)
+	local blend = 1 - math.exp(-math.max(_Tune.CurbRecoveryDamping or 16, 0) * dt)
+	driveSeat.AssemblyAngularVelocity = current
+		+ forward * (rollTarget - rollRate) * blend
+		+ right * (pitchTarget - pitchRate) * blend
+end
 
 local function MidAirControl(dt: number)
 	local groundedCount = 0
@@ -1799,7 +2130,9 @@ local function MidAirControl(dt: number)
 	for wheel, wheelData in pairs(Wheels) do
 		if wheelData.isFront then frontWheelCount += 1 else rearWheelCount += 1 end
 		local wheelRadius = math.max(wheel.Size.Y, wheel.Size.Z) * 0.5
-		local result = workspace:Raycast(wheel.Position, -Vector3.yAxis * (wheelRadius + 0.08), midAirRays)
+		local carUp = driveSeat.CFrame.UpVector
+		local result = (carUp.Y > 0.35) and workspace:Raycast(wheel.Position, -carUp * (wheelRadius + 0.15), midAirRays) or nil
+		_WheelGrounded[wheelData.Name] = (result ~= nil)
 		if result then
 			groundedCount += 1
 			if result.Normal.Y >= 0.35 then
@@ -1819,18 +2152,19 @@ local function MidAirControl(dt: number)
 		end
 	end
 
+	_FrontGroundedCount = frontGroundedCount
+	_RearGroundedCount = rearGroundedCount
+	arcadeGroundedCount = groundNormalCount
+	arcadeGroundNormal = groundNormalCount > 0 and groundNormalSum.Unit or Vector3.yAxis
 	local wasAirborne = _MidAirActive
 	_MidAirActive = groundedCount < 3
 	if _MidAirActive and _Tune.ArcadeSteering then
-		Steering(dt) -- Straighten the wheels immediately on takeoff.
+		Steering(dt)
 		if not wasAirborne then
 			local spin = driveSeat.AssemblyAngularVelocity
 			driveSeat.AssemblyAngularVelocity = Vector3.new(spin.X, 0, spin.Z)
 		end
 	end
-	arcadeGroundedCount = groundNormalCount
-	arcadeGroundNormal = groundNormalCount > 0 and groundNormalSum.Unit or Vector3.yAxis
-
 	local totalWheelCount = frontWheelCount + rearWheelCount
 	local frontAverageGroundY = frontGroundedCount > 0 and frontGroundHeight / frontGroundedCount or 0
 	local rearAverageGroundY = rearGroundedCount > 0 and rearGroundHeight / rearGroundedCount or 0
@@ -1862,18 +2196,25 @@ local function MidAirControl(dt: number)
 		local assemblyVelocity = weightBrick.AssemblyLinearVelocity
 		local horizontalSpeed = Vector3.new(assemblyVelocity.X, 0, assemblyVelocity.Z).Magnitude
 		local currentVerticalSpeed = assemblyVelocity.Y
-		if horizontalSpeed >= _Tune.AirLaunchMinimumSpeed and currentVerticalSpeed > -2 then
+		local minLaunchSpeed = (_Tune.AirLaunchMinimumSpeed and _Tune.AirLaunchMinimumSpeed > 0) and _Tune.AirLaunchMinimumSpeed or 22
+		local baseBoost = (_Tune.AirLaunchBaseBoost and _Tune.AirLaunchBaseBoost > 0) and _Tune.AirLaunchBaseBoost or 6.0
+		local speedScale = (_Tune.AirLaunchSpeedScale and _Tune.AirLaunchSpeedScale > 0) and _Tune.AirLaunchSpeedScale or 0.08
+		local maxVertSpeed = (_Tune.AirLaunchMaxVerticalSpeed and _Tune.AirLaunchMaxVerticalSpeed > 0) and _Tune.AirLaunchMaxVerticalSpeed or 24.0
+		if horizontalSpeed >= minLaunchSpeed and currentVerticalSpeed > -2 then
 			local requestedBoost = math.min(
-				_Tune.AirLaunchBaseBoost + horizontalSpeed * _Tune.AirLaunchSpeedScale,
-				_Tune.AirLaunchMaxVerticalSpeed
+				baseBoost + horizontalSpeed * speedScale,
+				maxVertSpeed
 			)
 			local targetVerticalSpeed = math.min(
-				_Tune.AirLaunchMaxVerticalSpeed,
+				maxVertSpeed,
 				math.max(0, currentVerticalSpeed) + requestedBoost
 			)
 			local verticalBoost = math.max(0, targetVerticalSpeed - currentVerticalSpeed)
 			if verticalBoost > 0 then
-				weightBrick:ApplyImpulse(Vector3.yAxis * weightBrick.AssemblyMass * verticalBoost)
+				local fwdDir = Vector3.new(driveSeat.CFrame.LookVector.X, 0, driveSeat.CFrame.LookVector.Z)
+				fwdDir = fwdDir.Magnitude > 0.01 and fwdDir.Unit or driveSeat.CFrame.LookVector
+				local fwdBoost = math.clamp(horizontalSpeed * 0.05, 0, 8)
+				weightBrick:ApplyImpulse((Vector3.yAxis * verticalBoost + fwdDir * fwdBoost) * weightBrick.AssemblyMass)
 				local launchReason = rampTakeoff and "rising ramp" or "axle takeoff"
 				print(string.format(
 					"[PiggyCar HeavyGripFloat][AirLaunch] %s boost %.1f studs/s at %.1f studs/s",
@@ -1887,83 +2228,39 @@ local function MidAirControl(dt: number)
 
 	if groundedCount >= 3 then
 		_MidAirActive = false
+		car:SetAttribute("PiggyCarAirborneWeightReduced", false)
 		return
 	end
 
 	_MidAirActive = true
+	car:SetAttribute("PiggyCarAirborneWeightReduced", true)
+	-- Clear curbAssistForce in air to prevent artificial antigravity lift (no flying off the map)
+	if curbAssistForce then curbAssistForce.Force = Vector3.zero end
 
-	-- W pitches the nose down and S pitches it up; A/D roll the chassis without yaw.
-	local pitchInput = (_GBrake - _GThrot)
+	-- Pitch & Roll Orientation Control (GTA / Asphalt style)
+	-- W: Nose Down (-10 deg) to level out for smooth landing
+	-- S: Nose Up (+14 deg) to catch air / prevent nose-dive
+	-- A / D: Yaw & slight Bank (roll) to align landing direction with road
+	-- Spacebar + A/D: Stunt Barrel Roll
+	local currentPitch = math.asin(math.clamp(driveSeat.CFrame.LookVector.Y, -1, 1))
+	local targetPitch = 0
+	if _GBrake > 0.1 then
+		targetPitch = math.rad(14)
+	elseif _GThrot > 0.1 then
+		targetPitch = math.rad(-10)
+	end
+
+	local pitchCmd = math.clamp((targetPitch - currentPitch) * 3.0, -1.2, 1.2)
 	local rollInput = _GSteerT
 
-	local pitchSpeed = 1.4
-	local rollSpeed = 1.4
-
-	local localAngVel = Vector3.new(pitchInput * pitchSpeed, 0, -rollInput * rollSpeed)
+	local currentRoll = math.asin(math.clamp(driveSeat.CFrame.RightVector.Y, -1, 1))
+	local rollRateCmd = _SpaceHeld and (-rollInput * 2.8) or math.clamp((math.rad(rollInput * 12) - currentRoll) * 3.0, -1.6, 1.6)
+	local yawRateCmd = (not _SpaceHeld) and (-rollInput * 1.2) or 0
+	local localAngVel = Vector3.new(pitchCmd * 1.5, yawRateCmd, rollRateCmd)
 	local worldAngVel = driveSeat.CFrame:VectorToWorldSpace(localAngVel)
 
-	local lerpFactor = math.min(dt * 4, 1)
+	local lerpFactor = math.min(dt * 5, 1)
 	driveSeat.AssemblyAngularVelocity = driveSeat.AssemblyAngularVelocity:Lerp(worldAngVel, lerpFactor)
-end
-
--- Brief anti-flip recovery after a fast curb climb. Ordinary ramp airtime is untouched.
-local function UpdateCurbRecovery(dt: number)
-	if not _Tune.CurbAssistEnabled then return end
-	local recoveryActive = os.clock() < curbRecoveryUntil
-	if not recoveryActive and arcadeGroundedCount < 1 then return end
-
-	local floorHit = workspace:Raycast(
-		weightBrick.Position,
-		-Vector3.yAxis * _Tune.CurbRecoveryGroundProbe,
-		midAirRays
-	)
-	if not floorHit or floorHit.Normal.Y < 0.45 then return end
-
-	local carCFrame = driveSeat.CFrame
-	local up = carCFrame.UpVector
-	local groundNormal = floorHit.Normal
-	if up:Dot(groundNormal) < 0.15 then return end
-
-	local forward = carCFrame.LookVector
-	local right = carCFrame.RightVector
-	forward = Vector3.new(forward.X, 0, forward.Z)
-	right = Vector3.new(right.X, 0, right.Z)
-	if forward.Magnitude < 0.1 or right.Magnitude < 0.1 then return end
-	forward = forward.Unit
-	right = right.Unit
-
-	local correctionAxis = up:Cross(groundNormal)
-	local rollError = correctionAxis:Dot(forward)
-	local pitchError = correctionAxis:Dot(right)
-	local current = driveSeat.AssemblyAngularVelocity
-	local rollRate = current:Dot(forward)
-	local pitchRate = current:Dot(right)
-	if not recoveryActive then
-		-- A hard curb impact can be missed by the forward probe. Catch the dangerous
-		-- rotation while at least one wheel is still near the ground.
-		local velocity = driveSeat.AssemblyLinearVelocity
-		local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
-		local riskyRoll = math.abs(rollRate) >= 1.8 or math.abs(rollError) >= math.sin(math.rad(20))
-		local riskyPitch = math.abs(pitchRate) >= 2.5 and math.abs(pitchError) >= math.sin(math.rad(25))
-		if speed < _Tune.CurbRecoveryMinimumSpeed or not (riskyRoll or riskyPitch) then return end
-		curbRecoveryUntil = os.clock() + _Tune.CurbRecoveryDuration
-		print("[Hoki-Chassis][CurbRecovery] dangerous near-ground rotation detected")
-	end
-	if math.abs(rollError) < math.sin(math.rad(8))
-		and math.abs(pitchError) < math.sin(math.rad(30))
-		and math.abs(rollRate) < 1.2
-		and math.abs(pitchRate) < 1.2 then
-		return
-	end
-
-	local maxRate = math.max(_Tune.CurbRecoveryMaxAngularSpeed, 0)
-	local rollTarget = math.clamp(rollError * _Tune.CurbRecoveryRollStrength, -maxRate, maxRate)
-	local pitchExcess = math.sign(pitchError) * math.max(math.abs(pitchError) - math.sin(math.rad(25)), 0)
-	local pitchTarget = math.clamp(pitchExcess * _Tune.CurbRecoveryPitchStrength, -maxRate, maxRate)
-	local blend = 1 - math.exp(-math.max(_Tune.CurbRecoveryDamping, 0) * dt)
-	driveSeat.AssemblyAngularVelocity = current
-		+ forward * (rollTarget - rollRate) * blend
-		+ right * (pitchTarget - pitchRate) * blend
 end
 
 -- Last Input Type
@@ -2041,6 +2338,10 @@ local function RuntimeLoop(dt: number)
 	Value.SteerC.Value = _GSteerC
 	Value.SteerT.Value = _GSteerT
 	Value.PBrake.Value = _PBrake
+	car:SetAttribute("DriveTicks", ((car:GetAttribute("DriveTicks") or 0) + 1) % 100000)
+	car:SetAttribute("DriveLiveThrottle", _GThrot)
+	car:SetAttribute("DriveLiveGear", _CGear)
+	car:SetAttribute("DriveLivePBrake", _PBrake)
 
 	-- Velocity
 	Value.Velocity.Value = _Velocity
@@ -2074,14 +2375,19 @@ local function RuntimeLoop(dt: number)
 	-- Steering
 	Steering(dt)
 
+	-- Automatic Transmission (60Hz Zero-Delay)
+	if _TMode == "Auto" then
+		Auto()
+	end
+
 	-- Gear
 	Gear()
 
+	-- Mid-Air Control (runs before Engine so wheel ground flags are fresh)
+	MidAirControl(dt)
+
 	-- Power
 	Engine(dt)
-
-	-- Mid-Air Control
-	MidAirControl(dt)
 
 	-- Apply direct chassis steering after air control so it cannot overwrite yaw.
 	ArcadeSteeringYaw(dt)
@@ -2128,40 +2434,68 @@ end
 
 task.spawn(SlowRuntimeLoop)
 
--- [[ HOKI TOWN Clean Exit & Spacebar Handbrake Handler ]]
-local ContextActionService = game:GetService("ContextActionService")
-local exitRemote = tuneFolder:WaitForChild("VehicleExitRequest", 5) or car:WaitForChild("VehicleExitRequest", 5)
 
-local function triggerCleanExit()
-	if exitRemote and exitRemote:IsA("RemoteEvent") then
-		exitRemote:FireServer()
-	else
-		if humanoid then
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-			humanoid.Sit = false
+-- ============================================================================
+-- SINK SPACEBAR HANDBRAKE & PREVENT EJECT JUMPING BUG
+-- ============================================================================
+local ContextActionService = game:GetService("ContextActionService")
+local character = player.Character
+local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+-- 1. Disable Jumping while seated so pressing Spacebar NEVER bounces the player out of the seat!
+if humanoid then
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+end
+
+-- 1b. Locally suppress ALL door prompts for the driver so "นั่งข้างคนขับ" NEVER pops up while driving!
+local doorPromptsFolder = car:FindFirstChild("Body") and car.Body:FindFirstChild("DoorPrompts")
+local function setPromptsEnabled(enabled: boolean)
+	if doorPromptsFolder then
+		for _, desc in ipairs(doorPromptsFolder:GetDescendants()) do
+			if desc:IsA("ProximityPrompt") then
+				desc.Enabled = enabled
+			end
 		end
 	end
 end
+setPromptsEnabled(false)
 
--- 1. Sinks Spacebar while driving so Space acts as Handbrake / Drift without ejecting player into roof
+-- 2. Bind Spacebar to Handbrake with SINK at maximum priority (overrides Roblox core jump!)
+local function handleSpacebarHandbrake(_actionName, inputState, _inputObject)
+	if inputState == Enum.UserInputState.Begin then
+		_SpaceHeld = true
+		_PBrake = true
+		return Enum.ContextActionResult.Sink
+	elseif inputState == Enum.UserInputState.End then
+		_SpaceHeld = false
+		_PBrake = false
+		return Enum.ContextActionResult.Sink
+	end
+	return Enum.ContextActionResult.Sink
+end
+
 ContextActionService:BindActionAtPriority(
 	"HokiSpacebarHandbrakeSink",
-	function(_, state)
-		if state == Enum.UserInputState.Begin then
-			_PBrake = true
-			return Enum.ContextActionResult.Sink
-		elseif state == Enum.UserInputState.End then
-			_PBrake = false
-			return Enum.ContextActionResult.Sink
-		end
-		return Enum.ContextActionResult.Sink
-	end,
+	handleSpacebarHandbrake,
 	false,
 	Enum.ContextActionPriority.High.Value + 3000,
 	Enum.KeyCode.Space
 )
 
--- 2. Clean [E] / [F] Exit Vehicle Handler
+-- 3. Clean [E] / [F] Exit Vehicle Handler
+local exitRemote = car:FindFirstChild("VehicleExitRequest")
+local function triggerCleanExit()
+	if exitRemote then
+		exitRemote:FireServer()
+	else
+		if humanoid then
+			humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+			humanoid.Sit = false
+			humanoid.Jump = true
+		end
+	end
+end
+
 ContextActionService:BindActionAtPriority(
 	"HokiDriverCleanExit",
 	function(_, state)
@@ -2177,12 +2511,25 @@ ContextActionService:BindActionAtPriority(
 	Enum.KeyCode.F
 )
 
--- 3. Cleanup on unseat
-driveSeat.ChildRemoved:Connect(function(child: Instance)
-	if child.Name == "SeatWeld" and child:IsA("Weld") then
-		pcall(function()
-			ContextActionService:UnbindAction("HokiSpacebarHandbrakeSink")
-			ContextActionService:UnbindAction("HokiDriverCleanExit")
+-- 4. Mobile Exit Button Binding
+local mobile = script.Parent:FindFirstChild("Mobile")
+if mobile then
+	local mobileExit = mobile:FindFirstChild("MobileExit", true)
+	if mobileExit then
+		mobileExit.MouseButton1Click:Connect(function()
+			triggerCleanExit()
 		end)
 	end
+end
+
+-- 5. Restore Jumping and unbind actions on exit
+script.Destroying:Connect(function()
+	setPromptsEnabled(true)
+	if humanoid then
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+	end
+	ContextActionService:UnbindAction("HokiSpacebarHandbrakeSink")
+	ContextActionService:UnbindAction("HokiDriverCleanExit")
 end)
+
+
