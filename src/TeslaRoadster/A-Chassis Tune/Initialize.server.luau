@@ -80,7 +80,7 @@ local seat = car.DriveSeat
 local Wheels = {}
 local Drive = Wheels
 local Tune = require(script.Parent)
-local Units = require(car["A-Chassis Tune"].README.Units)
+local Units = require(script.Parent:WaitForChild("README"):WaitForChild("Units"))
 
 local shutdownEvent = script.Parent:FindFirstChild("Shutdown")
 if not shutdownEvent then

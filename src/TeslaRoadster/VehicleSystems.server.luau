@@ -89,6 +89,15 @@ if not fxRemote then
 	fxRemote.Parent = tuneFolder
 end
 
+task.spawn(function()
+	local soundsRemote = car:WaitForChild("Sounds", 5) :: RemoteEvent?
+	if soundsRemote and soundsRemote:IsA("RemoteEvent") then
+		soundsRemote.OnServerEvent:Connect(function(player, packet)
+			-- Safely absorb sound sync packet from driver without spamming discarded event
+		end)
+	end
+end)
+
 -- ============================================================================
 -- 2. SUSPENSION SHOCK VISUAL HIDER
 -- ============================================================================
