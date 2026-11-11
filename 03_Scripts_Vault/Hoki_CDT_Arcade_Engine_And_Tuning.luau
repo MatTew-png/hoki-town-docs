@@ -795,6 +795,12 @@ local renderConn = RunService.RenderStepped:Connect(function(dt)
 	if rawSteer == 0 and math.abs(driveSeat.SteerFloat) > 0.05 then
 		rawSteer = driveSeat.SteerFloat
 	end
+	if not wDown and driveSeat.ThrottleFloat > 0.05 then
+		wDown = true
+	end
+	if not sDown and driveSeat.ThrottleFloat < -0.05 then
+		sDown = true
+	end
 
 	-- Read Live Tuning Config
 	local stageIdx = math.clamp(tonumber(car:GetAttribute("PerfStage")) or 2, 1, 4)

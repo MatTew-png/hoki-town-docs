@@ -1,5 +1,56 @@
-.obsidian/workspace*
-.obsidian/cache*
-.DS_Store
-*.log
+# ==============================================================================
+# HOKI TOWN — Obsidian Vault & Roblox Studio .gitignore
+# ==============================================================================
 
+# Obsidian Ephemeral & Device-Specific Layouts
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/workspace*
+.obsidian/cache/
+.obsidian/cache*
+.obsidian/backups/
+.obsidian/plugins/obsidian-git/data.json
+.trash/
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python & Temporary Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+*.tmp
+*.bak
+
+# Roblox Studio Auto-Recovery & Dumps (If any)
+*.rbxlx.tmp
+*.rbxl.tmp
+
+# Scratch, Backups & Ephemeral Agent Logs
+scratch/
+.scratch/*
+!.scratch/handoffs/
+backups/
+.agents/opencode/sessions/
+
+# Generated Roblox / LSP Files & Large Binaries / Archives
+sourcemap.json
+globalTypes.d.luau
+*.rbxm
+*.rbxl
+*.rbxlx
+*.blend
+*.blend1
+*.fbx
+*.zip
+*.rar
+
+# Ad-hoc Root Debug Dumps & Scratch Scripts
+clean_*.luau
+debug_*.luau
+step_*.txt
+vsc_step.txt
+kob_*

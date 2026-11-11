@@ -1,3 +1,19 @@
+---
+project: HOKI TOWN
+doc_type: development-manual
+system: vehicle-development
+sandbox_method: isolated-chassis-testing
+status: active
+priority: high
+last_audit: 2026-11-04
+tags:
+  - vehicle-manual
+  - tuning-guide
+  - sandbox-testing
+  - developer-guide
+  - best-practices
+---
+
 # 🏎️ คู่มือเจาะลึกระบบรถยนต์ HOKI TOWN (Vehicle Master Development Manual)
 
 > **สำหรับ:** ผู้รับผิดชอบระบบยานพาหนะทั้งหมดของโปรเจค HOKI TOWN  

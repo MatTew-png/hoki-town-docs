@@ -1,3 +1,24 @@
+---
+project: HOKI TOWN
+script_name: AChassis_Drive_CDT_Arcade_Client
+script_type: LocalScript
+datamodel_location: 'Workspace.TeslaRoadster["A-Chassis Tune"]["A-Chassis Interface"].Drive'
+lines_of_code: 2118
+verified_status: passed
+features:
+  - tap-to-drift
+  - spacebar-sink
+  - mobile-hud
+  - surface-smoke
+tags:
+  - client-script
+  - cdt-arcade
+  - a-chassis
+  - input-sink
+  - tap-to-drift
+  - production-code
+---
+
 # 📜 AChassis_Drive_CDT_Arcade_Client (LocalScript)
 
 > **ตำแหน่งใน DataModel:** `Workspace.TeslaRoadster["A-Chassis Tune"]["A-Chassis Interface"].Drive`  

@@ -1,0 +1,195 @@
+{
+  "nodes": [
+    {
+      "id": "grp-identity",
+      "type": "group",
+      "label": "🏙️ HOKI TOWN — Executive Project Overview",
+      "x": -900,
+      "y": -400,
+      "width": 560,
+      "height": 480,
+      "color": "5"
+    },
+    {
+      "id": "node-hero-card",
+      "type": "text",
+      "text": "# 🏙️ HOKI TOWN (Roblox RP)\n> **Place ID:** `70639875551777`  \n> **Universe ID:** `10770440568`  \n> **Genre:** Thai Roleplay / Arcade Driving / Farming  \n> **Scope:** โครงการพัฒนาอิสระใหม่เต็มรูปแบบ\n\n---\n### 🎯 Core Gameplay Pillar\n1. **High-Octane Driving:** CDT Arcade Supercar (280 km/h)\n2. **Thai Town Atmosphere:** Shophouses, Night Markets, 1.5k Roads\n3. **Economy & Gathering:** Totem Fruit Farming (LungA, Banana, Melon)\n4. **FiveM RP Elements:** Garages, Fuel Sites, Interactive Summon",
+      "x": -880,
+      "y": -340,
+      "width": 520,
+      "height": 260,
+      "color": "5"
+    },
+    {
+      "id": "node-master-index-link",
+      "type": "file",
+      "file": "00_Index/00_Master_Index.md",
+      "x": -880,
+      "y": -60,
+      "width": 520,
+      "height": 120
+    },
+    {
+      "id": "grp-scorecard",
+      "type": "group",
+      "label": "📊 System Readiness Scorecard",
+      "x": -300,
+      "y": -400,
+      "width": 560,
+      "height": 480,
+      "color": "4"
+    },
+    {
+      "id": "node-scorecard-card",
+      "type": "text",
+      "text": "## 📊 System Health Assessment\n\n| ระบบ (Domain) | คะแนน | สถานะ | ข้อคิดเห็น |\n| :--- | :---: | :---: | :--- |\n| **Vehicle Physics** | **9.5/10** | 🟢 สมบูรณ์ | CDT Arcade, Tap-to-Drift, 280 km/h |\n| **World & Map** | **9.0/10** | 🟢 สวยงาม | 1,552 Roads, Thai Shophouses |\n| **Gameplay Loop** | **3.0/10** | 🟡 มีเฉพาะภาพ | มีแท่นฟาร์มแล้ว ขาด Harvesting Prompt |\n| **Server Backend** | **2.0/10** | 🔴 วิกฤต | โค้ดยังฝังใน Workspace ขาด Services |\n| **Networking** | **1.0/10** | 🔴 ต้องสร้างใหม่ | ReplicatedStorage ว่างเปล่า 100% |",
+      "x": -280,
+      "y": -340,
+      "width": 520,
+      "height": 260,
+      "color": "4"
+    },
+    {
+      "id": "node-status-audit-link",
+      "type": "file",
+      "file": "00_Index/01_Project_Status_Audit.md",
+      "x": -280,
+      "y": -60,
+      "width": 520,
+      "height": 120
+    },
+    {
+      "id": "grp-sprint",
+      "type": "group",
+      "label": "🚀 Active Sprint & Milestone Tracking",
+      "x": 300,
+      "y": -400,
+      "width": 600,
+      "height": 480,
+      "color": "1"
+    },
+    {
+      "id": "node-sprint-focus",
+      "type": "text",
+      "text": "## ⚡ Immediate Sprint Goals (Phase 1 & 2)\n\n- [x] **CDT Arcade Overhaul:** Tap-to-Drift, Spacebar Sink, 280 km/h ✅\n- [x] **HUD Crash Bugfix:** Safe VehicleRef listening 60 FPS ✅\n- [x] **GodMode Safety:** Infinite drive without breakdown death ✅\n- [ ] **Task 2.1:** Move TeslaRoadster to `ServerStorage.VehicleTemplates` ⏳\n- [ ] **Task 2.2:** Build centralized `VehicleService` in `ServerScriptService` ⏳\n- [ ] **Task 3.1:** Connect `ProximityPrompt` harvest on Totem Farms ⏳\n- [ ] **Task 4.1:** Setup `ProfileStore` for Player Cash & Owned Cars ⏳",
+      "x": 320,
+      "y": -340,
+      "width": 560,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "node-kanban-link",
+      "type": "file",
+      "file": "02_Technical_Architecture_Handover/KANBAN_Refactoring_Board.md",
+      "x": 320,
+      "y": -60,
+      "width": 270,
+      "height": 120
+    },
+    {
+      "id": "node-roadmap-link",
+      "type": "file",
+      "file": "02_Technical_Architecture_Handover/ARCH_02_Target_Refactoring_Roadmap.md",
+      "x": 610,
+      "y": -60,
+      "width": 270,
+      "height": 120
+    },
+    {
+      "id": "grp-hubs",
+      "type": "group",
+      "label": "🧭 Quick Access Hubs & Specifications",
+      "x": -900,
+      "y": 120,
+      "width": 1800,
+      "height": 440,
+      "color": "6"
+    },
+    {
+      "id": "node-feature-matrix-link",
+      "type": "file",
+      "file": "00_Index/02_Feature_Matrix.md",
+      "x": -880,
+      "y": 180,
+      "width": 330,
+      "height": 340
+    },
+    {
+      "id": "node-manual-link",
+      "type": "file",
+      "file": "01_Features_Deep_Dive/VEHICLE_MASTER_DEVELOPMENT_MANUAL.md",
+      "x": -520,
+      "y": 180,
+      "width": 330,
+      "height": 340
+    },
+    {
+      "id": "node-cdt-feat-link",
+      "type": "file",
+      "file": "01_Features_Deep_Dive/FEAT_01B_CDT_Arcade_Vehicle_Overhaul.md",
+      "x": -160,
+      "y": 180,
+      "width": 330,
+      "height": 340
+    },
+    {
+      "id": "node-remotes-link",
+      "type": "file",
+      "file": "02_Technical_Architecture_Handover/ARCH_03_Remotes_And_Data_Model_Spec.md",
+      "x": 200,
+      "y": 180,
+      "width": 330,
+      "height": 340
+    },
+    {
+      "id": "node-dataview-link",
+      "type": "file",
+      "file": "02_Technical_Architecture_Handover/DATAVIEW_Live_Dashboard.md",
+      "x": 560,
+      "y": 180,
+      "width": 320,
+      "height": 340
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_hero_to_score",
+      "fromNode": "node-hero-card",
+      "fromSide": "right",
+      "toNode": "node-scorecard-card",
+      "toSide": "left",
+      "label": "Audited via Studio Engine"
+    },
+    {
+      "id": "e_score_to_sprint",
+      "fromNode": "node-scorecard-card",
+      "fromSide": "right",
+      "toNode": "node-sprint-focus",
+      "toSide": "left",
+      "label": "Drives Sprint Backlog"
+    },
+    {
+      "id": "e_sprint_to_kanban",
+      "fromNode": "node-sprint-focus",
+      "fromSide": "bottom",
+      "toNode": "node-kanban-link",
+      "toSide": "top"
+    },
+    {
+      "id": "e_sprint_to_roadmap",
+      "fromNode": "node-sprint-focus",
+      "fromSide": "bottom",
+      "toNode": "node-roadmap-link",
+      "toSide": "top"
+    },
+    {
+      "id": "e_score_to_dataview",
+      "fromNode": "node-status-audit-link",
+      "fromSide": "bottom",
+      "toNode": "node-dataview-link",
+      "toSide": "top",
+      "label": "Real-time Metrics"
+    }
+  ]
+}

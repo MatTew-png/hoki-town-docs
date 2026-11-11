@@ -1,3 +1,21 @@
+---
+project: HOKI TOWN
+category: architecture
+doc_type: network-datastore-spec
+network_architecture: client-server-remotes
+datastore_framework: ProfileStore
+status: planned
+priority: critical
+last_audit: 2026-11-04
+tags:
+  - networking
+  - remote-events
+  - remote-functions
+  - datastore
+  - profilestore
+  - security
+---
+
 # 📡 ARCH-03: Remotes & Data Model Specification (ข้อกำหนดระบบเน็ตเวิร์กและฐานข้อมูล)
 
 > **เอกสารออกแบบระบบ (Technical Architecture Spec):** จัดเตรียมไว้ล่วงหน้าเพื่อให้การพัฒนาในก้าวต่อไปสามารถเขียนโค้ดต่อได้ทันทีโดยไม่ต้องเริ่มต้นคิดโครงสร้างใหม่

@@ -1,67 +1,64 @@
+---
+project: HOKI TOWN
+place_id: "70639875551777"
+universe_id: "10770440568"
+category: index
+doc_type: audit-report
+status: completed
+audit_tool: "Roblox Studio Open Engine Interface"
+total_descendants: 35000+
+last_audit: 2026-11-04
+tags:
+  - audit
+  - datamodel-scan
+  - technical-debt
+  - workspace-audit
+  - code-smell
+---
+
 # 📊 01. Project Status Audit (รายงานผลการสแกนและสถานะโครงการ)
 
-> **วันที่ตรวจสอบ:** 2026-11-04  
-> **เครื่องมือที่ใช้:** Roblox Studio Open Engine Interface, Runtime Introspection, Lua AST DataModel Query  
-> **เป้าหมาย:** สแกนสภาพจริงของ DataModel และโครงสร้างไฟล์ทั้งหมดเพื่อประเมินความพร้อมในการพัฒนาต่อ  
+> **Audit Method:** สแกนสดผ่าน Roblox Studio Open Engine Interface, Runtime Introspection และ Lua AST DataModel Query #audit
 
 ---
 
-## 1. ผลการตรวจนับอ็อบเจ็กต์ทั่วทั้ง DataModel (Inventory Breakdown)
+## 1. ผลการตรวจนับอ็อบเจ็กต์ทั่วทั้ง DataModel (Inventory Breakdown) #datamodel-scan
 
 | บริการ (Service) | จำนวนอ็อบเจ็กต์ตรง (Direct) | ลูกหลานทั้งหมด (Descendants) | สถานะความพร้อม (Readiness) |
 | :--- | :--- | :--- | :--- |
-| **Workspace** | 4,992 ชิ้น | > 35,000 ชิ้น | 🟡 มี Map สมบูรณ์มาก แต่สคริปต์กระจายอยู่ข้างใน |
-| **ServerScriptService** | **0 ชิ้น** | **0 ชิ้น** | 🔴 ว่างเปล่า 100% (ยังไม่มีระบบ Backend กลาง) |
-| **ReplicatedStorage** | **0 ชิ้น** | **0 ชิ้น** | 🔴 ว่างเปล่า 100% (ไม่มี Remotes / Modules กลาง) |
-| **ServerStorage** | 2 ชิ้น | ~10 ชิ้น | ⚪ มีเฉพาะแคชของปลั๊กอิน (Brushtool2, Eclipse) |
-| **StarterGui** | **0 ชิ้น** | **0 ชิ้น** | 🔴 ว่างเปล่า (GUI รถถูกเก็บไว้ในตัวโมเดลรถ) |
-| **StarterPlayerScripts**| 0 ชิ้น | 0 ชิ้น | 🔴 ว่างเปล่า |
-| **Lighting** | 5 ชิ้น | 5 ชิ้น | 🟢 ปรับแต่ง Cinematic Atmosphere และ Skybox ไว้แล้ว |
-| **MaterialService** | 10 ชิ้น | 10 ชิ้น | 🟢 ติดตั้ง SteaveTech Texture Pack V1.6 ไว้แล้ว |
-| **Teams** | 0 ชิ้น | 0 ชิ้น | ⚪ ยังไม่มีระบบฝ่าย / อาชีพ |
+| **Workspace** | 4,992 ชิ้น | > 35,000 ชิ้น | 🟡 มี Map สมบูรณ์มาก แต่สคริปต์กระจายอยู่ข้างใน #workspace-audit |
+| **ServerScriptService** | **0 ชิ้น** | **0 ชิ้น** | 🔴 ว่างเปล่า 100% (ยังไม่มีระบบ Backend กลาง) #critical #technical-debt |
+| **ReplicatedStorage** | **0 ชิ้น** | **0 ชิ้น** | 🔴 ว่างเปล่า 100% (ไม่มี Remotes / Modules กลาง) #critical #networking |
+| **ServerStorage** | 3 ชิ้น | 3 ชิ้น | 🔴 ยังไม่ได้ใช้เก็บโมเดลสปอว์นรถ #todo |
+| **StarterGui** | 0 ชิ้น | 0 ชิ้น | 🟡 หน้าปัดไมล์ยังฝังอยู่ในตัวรถใน Workspace #ui-debt |
+| **StarterPlayerScripts**| 0 ชิ้น | 0 ชิ้น | 🟡 สคริปต์ฝั่งผู้เล่นยังไม่ถูกแยกเป็นโมดูล |
+| **Lighting** | 7 ชิ้น | 7 ชิ้น | 🟢 ปรับแต่ง Atmosphere, Sky, Bloom, ColorCorrection ไว้สวยงามแล้ว #lighting |
 
 ---
 
-## 2. การค้นพบสคริปต์ในระบบ (Script Analysis)
-จากการสแกนค้นหาอินสแตนซ์ประเภท `LuaSourceContainer` (`Script`, `LocalScript`, `ModuleScript`) ทั่วทั้งเกม:
-- **จำนวนสคริปต์ทั้งหมดที่พบ:** **41 สคริปต์**
-- **สัดส่วน:**
-  - **A-Chassis Framework Scripts:** 35 สคริปต์ (ระบบขับรถมาตรฐาน A-Chassis 6.8+ ใน `TeslaRoadster`)
-  - **Custom Vehicle Gameplay Scripts:** 2 สคริปต์ (`VehicleSystems` ฝั่ง Server และ `VehicleStatusClient` ฝั่ง LocalScript)
-  - **Hazard & Trap Scripts:** 1 สคริปต์ (`BarrelExplosions` ใน `Workspace.ExplosiveBarrels`)
-  - **Kinematic Visual Scripts:** 2 สคริปต์ (`TotemAnimation` ใน `Workspace.TotemFarm_Pack`)
-  - **Avatar Animation Scripts:** 1 สคริปต์ (`Animate` ใน `Workspace.Rig`)
+## 2. การวิเคราะห์สภาพโค้ดและจุดเสี่ยงวิกฤต (Critical Architecture Risks) #technical-debt
 
-> [!IMPORTANT]
-> **ข้อสังเกตสำคัญ:** 
-> สคริปต์ที่ผู้พัฒนาคนก่อนเขียนขึ้นเอง (Custom Logic) จริงๆ มีอยู่ **4 สคริปต์หลัก** รวมความยาวประมาณ **500+ บรรทัด** โดยมุ่งเน้นไปที่ระบบการขับขี่รถยนต์ที่สมจริงและการแสดงผลในฉาก
+### 🔴 จุดเสี่ยงที่ 1: สถาปัตยกรรมไร้ Backend (No Central Backend) #critical #anti-pattern
+- เซิร์ฟเวอร์ของเกมไม่มีโค้ดควบคุมกลางใน `ServerScriptService` เลยแม้แต่บรรทัดเดียว
+- สคริปต์ทั้งหมดถูกกระจายฝังตัวอยู่ตาม Part ใน `Workspace`:
+  - `Workspace.TeslaRoadster.VehicleSystems` (สคริปต์ควบคุมรถ)
+  - `Workspace.ExplosiveBarrels.BarrelExplosions` (สคริปต์ถังระเบิด)
+  - `Workspace.TotemFarm_Pack.TotemAnimation` (สคริปต์หมุนเสาฟาร์ม)
+- **ผลกระทบ:** หากมีผู้เล่นเบิกรถ 20 คัน เซิร์ฟเวอร์จะรันสคริปต์ซ้ำซ้อนกัน 20 ชุด ทำให้เซิร์ฟเวอร์กระตุกและกิน CPU เกินจำเป็น
 
----
-
-## 3. การประเมินจุดแข็งและข้อจำกัดทางเทคนิค (SWOT Analysis for Handover)
-
-### 🟢 จุดแข็ง (Strengths)
-1. **World & Level Design พร้อมใช้งานสูง:** ถนนเชื่อมต่อกันเป็นโครงข่ายขนาดใหญ่ ($7.7k \times 8.2k$ studs) มีทั้งโซนเมือง (ตึกแถวไทย, ทางเท้า) โซนอุตสาหกรรม (โกดัง FiveM) และโซนธรรมชาติ (ภูเขา, ฟาร์ม)
-2. **ระบบรถยนต์ลึกกว่าเกมทั่วไป:** มีการต่อยอด A-Chassis ให้มีระบบดาเมจชนตามความเร็ว 5 ระดับ (Tiers) และการตัดกำลังเครื่องยนต์เมื่อน้ำมันหมด
-3. **การออกแบบ UI รถสไตล์ Minimal:** หน้าปัดบอกความเร็ว, เกียร์ปัจจุบัน/ถัดไป/ก่อนหน้า, เลือด และน้ำมัน แสดงผลลื่นไหลระดับ 60 FPS ด้วย `RenderStepped`
-4. **Lighting สวยงามสไตล์ Realistic:** มีการใช้ Skybox คุณภาพสูง พร้อมเซ็ตติ้ง `Atmosphere`, `Bloom`, `SunRays` และ `ColorCorrection`
-
-### 🔴 ข้อจำกัดและความเสี่ยงที่ต้องแก้ (Risks & Debt)
-1. **ขาด Architecture กลาง (No Central Service Architecture):** 
-   - รถ Tesla Roadster ถูกวางทิ้งไว้ 2 คันใน Workspace หากมีผู้เล่น 10 คน รถจะไม่มีระบบ Spawner
-   - สคริปต์รถผูกติดกับชิ้นส่วนโดยตรง ไม่ได้รันผ่าน VehicleManager กลาง
-2. **ไม่มีระบบเครือข่าย Client-Server (No RemoteEvents):**
-   - รถสื่อสารสถานะผ่าน Attribute และ ObjectValue ซึ่งเสี่ยงต่อการหลุด Sync และยากต่อการทำระบบความปลอดภัย (Security Exploits)
-3. **ไม่มีจุดเกิดผู้เล่น (Missing SpawnLocation):**
-   - ใน Workspace ไม่มี `SpawnLocation` แม้แต่จุดเดียว ผู้เล่นจะสุ่มตกจากฟ้าที่พิกัด $(0, 100, 0)$
-4. **จุดฟาร์มและจุดเบิกรถยังเป็นแค่โมเดลนิ่ง (Missing Interaction Logic):**
-   - แท่นฟาร์ม (`FarmLungA`, `FarmBanana`, `FarmMelon`) มีแค่อนิเมชั่นหมุน แต่ยังไม่มี `ProximityPrompt` หรือปุ่มให้ผู้เล่นกดเก็บเกี่ยว
-   - วงกลม `Summon_Car` และ `Water_pump` ยังไม่มี Trigger Event ใดๆ
+### 🔴 จุดเสี่ยงที่ 2: ไร้ระบบเครือข่าย Client-Server (No RemoteEvents) #networking #security
+- ใน `ReplicatedStorage` ไม่มี RemoteEvent หรือ RemoteFunction ใดๆ อยู่เลย
+- การทำงานระหว่าง Client กับ Server ของระบบรถเดิมอาศัยการเขียนค่าลงใน `Attributes` ของชิ้นส่วนโมเดลใน Workspace ตรงๆ
+- **ผลกระทบ:** หากผู้เล่นใช้โปรแกรมโกง (Exploit) แก้ไขค่า Attribute เช่น ความเร็ว หรือสถานะ GodMode เซิร์ฟเวอร์จะไม่สามารถตรวจสอบได้
 
 ---
 
-## 4. ดัชนีความพร้อมของโครงการ (Overall Readiness Score)
-- **Map & Environment:** `80%` (พร้อมเล่น / ขาดเพียง Landmark เพิ่มเติม)
-- **Core Vehicle Mechanics:** `65%` (ขับได้จริง ชนพังได้ น้ำมันหมดได้ / ขาดระบบ Garage & Spawner)
-- **Game Economy & Jobs:** `10%` (มีเฉพาะแท่นหมุนกราฟิก / ขาดระบบเก็บเกี่ยว, กระเป๋า และร้านค้า)
-- **Backend Architecture & Networking:** `5%` (ต้องวางโครงสร้างใหม่ทั้งหมดตามหลัก Clean Architecture)
+## 3. ตารางประเมินเกรดความพร้อม (Readiness Scorecard)
+
+| ด้าน (Domain) | คะแนนประเมิน (Score) | สถานะ (Status) | คำอธิบาย (Remarks) |
+| :--- | :---: | :---: | :--- |
+| **World Design & Assets** | **9 / 10** | 🟢 ยอดเยี่ยม | แผนที่ ถนน และพร็อพ FiveM สวยงามสมบูรณ์พร้อมเปิด |
+| **Vehicle Physics (CDT Arcade)**| **9.5 / 10** | 🟢 สมบูรณ์สูง | แก้ไขบั๊กวิกฤต 4 จุด และผ่านการเทสต์ Sandbox เรียบร้อย |
+| **Server Backend Architecture**| **2 / 10** | 🔴 ต้องแก้ไขด่วน | ต้องย้ายสคริปต์ขึ้น `ServerScriptService` |
+| **Networking & Security** | **1 / 10** | 🔴 ต้องสร้างใหม่ | ต้องสร้าง RemoteEvents และ Server-Side Validation |
+| **Gameplay & Economy Loop** | **3 / 10** | 🟡 มีเฉพาะภาพ | มีแท่นฟาร์มแล้ว แต่ยังไม่มี ProximityPrompt และ Inventory |

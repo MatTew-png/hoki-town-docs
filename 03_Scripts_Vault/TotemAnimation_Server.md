@@ -1,3 +1,18 @@
+---
+project: HOKI TOWN
+script_name: TotemAnimation_Server
+script_type: Script (Server)
+datamodel_location: Workspace.TotemFarm_Pack.TotemAnimation
+lines_of_code: 97
+kinematic_axes: 3
+tags:
+  - server-script
+  - totem-animation
+  - cframe-math
+  - kinematics
+  - production-code
+---
+
 # 📜 TotemAnimation (Server Script)
 
 > **ตำแหน่งเดิมใน DataModel:** `Workspace.TotemFarm_Pack.TotemAnimation`  

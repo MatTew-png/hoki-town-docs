@@ -1,3 +1,21 @@
+---
+project: HOKI TOWN
+feature_id: VEH-01
+category: feature-deep-dive
+system: vehicle-systems
+framework: "A-Chassis 6.8+"
+datamodel_location: Workspace.TeslaRoadster
+status: implemented
+priority: high
+last_audit: 2026-11-04
+tags:
+  - vehicle-system
+  - a-chassis
+  - crash-damage
+  - fuel-system
+  - car-hud
+---
+
 # 🚗 FEAT-01: Vehicle Systems & A-Chassis (ระบบยานพาหนะและการขับขี่)
 
 > **ตำแหน่งใน DataModel:** `Workspace.TeslaRoadster`  

@@ -1,3 +1,24 @@
+---
+project: HOKI TOWN
+feature_id: MAP-01
+category: feature-deep-dive
+system: world-map-environment
+map_dimensions: "7722 x 8248 studs"
+road_segments: 1552
+mountain_parts: 1886
+lighting_technology: Future
+status: completed
+priority: medium
+last_audit: 2026-11-04
+tags:
+  - world-map
+  - level-design
+  - thai-theme
+  - shophouse
+  - environment
+  - lighting
+---
+
 # 🗺️ FEAT-05: World Map & Environment (โครงสร้างแผนที่และสิ่งแวดล้อม)
 
 > **ขอบเขตแผนที่ (World Bounds):** $7,722.2 \times 494.7 \times 8,248.3$ studs  

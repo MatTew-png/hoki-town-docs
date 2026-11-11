@@ -1,3 +1,20 @@
+---
+project: HOKI TOWN
+category: architecture
+doc_type: architecture-audit
+risk_level: medium
+technical_debt_rating: high
+status: documented
+last_audit: 2026-11-04
+tags:
+  - architecture-audit
+  - technical-debt
+  - anti-patterns
+  - workspace-scripts
+  - multiplayer-risks
+  - critical
+---
+
 # 🔍 ARCH-01: Predecessor Architecture Audit (ผ่าตัดสถาปัตยกรรมเดิมและหนี้ทางเทคนิค)
 
 > **รายงานสำหรับ:** ทีมพัฒนาชุดใหม่ที่รับไม้ต่อ  
@@ -6,9 +23,9 @@
 
 ---
 
-## 1. จุดเสี่ยงและข้อผิดพลาดทางสถาปัตยกรรม (Architectural Pitfalls Found)
+## 1. จุดเสี่ยงและข้อผิดพลาดทางสถาปัตยกรรม (Architectural Pitfalls Found) #anti-patterns #critical-debt
 
-### 🔴 ข้อที่ 1: สคริปต์ฝังตัวใน Workspace (Workspace-Embedded Scripting Anti-Pattern)
+### 🔴 ข้อที่ 1: สคริปต์ฝังตัวใน Workspace (Workspace-Embedded Scripting Anti-Pattern) #anti-pattern #critical
 - **ปัญหาที่พบ:** 
   - สคริปต์ควบคุมรถ `VehicleSystems` และหน้าปัด `CarStatusGui` ถูกยัดไว้ข้างในโมเดลรถแต่ละคันตรงๆ
   - สคริปต์ระเบิดถังน้ำมัน `BarrelExplosions` ฝังอยู่ในโฟลเดอร์ถัง

@@ -1,3 +1,23 @@
+---
+project: HOKI TOWN
+feature_id: VEH-01B
+category: feature-deep-dive
+system: cdt-arcade-overhaul
+target_model: Workspace.TeslaRoadster
+top_speed_kmh: 280
+drift_mode: tap-to-drift
+status: completed
+priority: critical
+last_audit: 2026-11-04
+tags:
+  - vehicle-system
+  - cdt-arcade
+  - tap-to-drift
+  - spacebar-sink
+  - critical-fix
+  - mobile-friendly
+---
+
 # 🏎️ FEAT-01B: CDT Arcade Vehicle Overhaul (การยกเครื่องระบบรถสไตล์ Car Dealership Tycoon)
 
 > **สถานะ:** ✅ ติดตั้ง, แก้บั๊ก 4 จุดวิกฤต และทดสอบยืนยันใน Studio Sandbox เรียบร้อยแล้ว  

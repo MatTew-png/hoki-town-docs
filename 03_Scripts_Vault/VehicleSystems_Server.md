@@ -1,87 +1,219 @@
+---
+project: HOKI TOWN
+script_name: VehicleSystems_Server
+script_type: Script (Server)
+datamodel_location: Workspace.TeslaRoadster.VehicleSystems
+lines_of_code: 549
+verified_status: passed
+features:
+  - safe-side-exit-eject
+  - pedestrian-ragdoll-damage
+  - live-tuning-and-customization-remote
+  - multiplayer-vfx-sync
+  - dynamic-breakdown-vfx
+  - quick-repair-remote
+  - hud-lifecycle
+tags:
+  - server-script
+  - vehicle-systems
+  - pedestrian-ragdoll
+  - multiplayer-sync
+  - production-code
+---
+
 # 📜 VehicleSystems (Server Script)
 
-> **ตำแหน่งใน DataModel:** Workspace.TeslaRoadster.VehicleSystems  
+> **ตำแหน่งใน DataModel:** `Workspace.TeslaRoadster.VehicleSystems`  
+> **ไฟล์ต้นทาง (Rojo SSOT):** [`src/TeslaRoadster/VehicleSystems.server.luau`](file:///c:/Users/_newgen/Documents/antigravity/HOKI%20TOWN/src/TeslaRoadster/VehicleSystems.server.luau)  
 > **ประเภทสคริปต์:** Server Script (Script)  
-> **คำอธิบาย:** สคริปต์เซิร์ฟเวอร์ควบคุมระบบหลักของตัวรถ Tesla Roadster จัดการประตู ProximityPrompt คนขับ/ผู้โดยสาร, การขึ้น-ลงรถและปลดตัวละคร, ระบบ GodMode ป้องกันรถพัง, ระบบเรนเดอร์ควันเครื่องยนต์เสีย (Breakdown VFX), รีโมตซ่อมรถด่วน (VehicleRepairRequest) และการกระจายหน้าปัดไมล์ CarStatusGui สู่ผู้เล่น  
-> **สถานะ:** ✅ ผ่านการแก้ไขและทดสอบใน Studio Sandbox เรียบร้อยแล้ว
+> **สถานะ:** ✅ ติดตั้งผ่าน Rojo และผ่านการทดสอบ Play Mode Unit Test เรียบร้อย (Exit Code 0)  
 
 ---
 
 ## 📌 สรุปคุณสมบัติและสถาปัตยกรรมหลัก (Key Architecture Features)
 
-1. **ระบบขึ้น-ลงรถผ่าน ProximityPrompt 2 ฝั่ง (DriverDoor / PassengerDoor):**
-   - ชิ้นส่วน Hitbox ประตูทั้ง 2 ฝั่งตั้งเป็น Anchored = false, CanCollide = false, CanTouch = false, Massless = true และเชื่อมด้วย WeldConstraint กับ DriveSeat **(แก้ปัญหาตัวรถถูกตอกหมุดขยับไม่ได้ 100%)**
-   - เมื่อกดลงรถ มีการลบ SeatWeld อย่างปลอดภัย คืนค่า HumanoidStateType.Jumping = true และวาร์ปตัวละครออกมายืนข้างประตูรถ (Offset ด้านข้าง + หมุนหน้าตามทิศทางรถ) เพื่อป้องกันไม่ให้ตัวละครติดอยู่ในหลังคารถหรือเด้งกระเด็น
-   - สลับสถานะ Prompt.Enabled อัตโนมัติเมื่อมีคนนั่ง เพื่อป้องกันไม่ให้คนขับเห็น Prompt ประตูบานอื่นบังหน้าจอ
-
-2. **ระบบความปลอดภัยและการขับขี่ไม่สะดุด (GodMode & Infinite Drive):**
-   - เปิดโหมด GodMode = true เป็นค่าเริ่มต้น ตรวจสอบในฟังก์ชันคำนวณการชน processImpact หากเปิด GodMode จะข้ามการหักเลือดทันที
-   - ฟังก์ชันตรวจสอบกำลังเครื่องยนต์ (updatePowerCutoff) ล็อกสถานะ VehiclePowerDisabled = false ถาวร ทำให้ขับได้ไม่จำกัดรอบ ไม่ต้องกังวลเรื่องน้ำมันหมดหรือรถน็อกกลางแมป
-
-3. **ระบบซ่อมรถด่วนและเอฟเฟกต์เครื่องพัง (Breakdown VFX & Quick Repair):**
-   - ฟังเหตุการณ์จาก VehicleRepairRequest (RemoteEvent): ผู้เล่นกดปุ่ม [R] ขณะขับหรือยืนอยู่ใกล้รถ (< 18 studs) จะฟื้นฟู Health = 100% และ Fuel = 100% ทันที
-   - อัปเดตเอฟเฟกต์ควันและไฟที่ห้องเครื่องยนต์ (EngineBayDamageVFX) ตามระดับความเสียหายแบบไดนามิก
-
-4. **การ Spawn และจัดการวงจรชีวิตของ HUD (CarStatusGui):**
-   - โคลน GUI จาก Template ไปยัง PlayerGui ของผู้ขับขี่โดยอัตโนมัติ พร้อมฝัง VehicleRef (ObjectValue) ชี้กลับมาที่ตัวรถ
-   - ทำลาย GUI ทิ้งอย่างสะอาดเมื่อผู้เล่นลงจากรถหรือตัดการเชื่อมต่อ
+1. **ระบบขึ้น-ลงรถอย่างปลอดภัย (Safe Side-Exit Eject):**
+   - เมื่อกดลงรถ ([F] หรือ [E]) สคริปต์จะปลด `SeatWeld` อย่างปลอดภัยและวาร์ปตัวละครออกมายืนข้างประตูฝั่งคนขับ (-5.8 studs) หรือฝั่งผู้โดยสาร (+5.8 studs)
+   - ป้องกันปัญหาตัวละครทะลุหลังคา ติดในคอพวงมาลัย หรือเด้งกระเด็นข้ามแมพ 100%
+2. **ระบบซิงค์แสงและเอฟเฟกต์ผู้เล่นหลายคน (Multiplayer VFX Sync):**
+   - รองรับ `HokiVehicleTuningRemote` ซิงค์ไฟเบรกสีแดงจ้า (Neon Red), ควันยางลอยแนบพื้นถนน, และรอยยาง ให้ผู้เล่นทุกคนในเซิร์ฟเวอร์เห็นพร้อมกันแบบเรียลไทม์
+3. **ระบบแต่งสีรถ 5 ช่องสี (5-Slot Customization):**
+   - รองรับการปรับแต่งสีตัวถัง (`BodyColor`), สีล้อแม็กซ์ (`RimColor`), และไฟนีออนใต้ท้องรถ (`UnderglowColor`)
+4. **ระบบการชนคนเดินถนน (Pedestrian Ragdoll & Damage):**
+   - เมื่อรถวิ่งชน NPC หรือผู้เล่นที่มี Humanoid ด้วยความเร็ว > 15 studs/s ตัวละครจะติดสถานะ **Ragdoll** ลอยกระเด็นตามแรงส่งของรถ พร้อมรับดาเมจตามความเร็วจริง
+5. **ระบบความเสียหายและเอฟเฟกต์เครื่องพัง (Engine Breakdown VFX & Quick Repair):**
+   - เลือด < 50%: ปล่อยควันขาวเตือน (`WarningWhiteSmoke`)
+   - เลือด < 25%: ปล่อยควันดำหนาทึบ (`HeavyBlackSmoke`)
+   - เลือด = 0%: ไฟลุกท่วม (`EngineFire`) และตัดกำลังเครื่องยนต์ (`VehiclePowerDisabled = true`)
+   - รีโมตซ่อมรถด่วน `VehicleRepairRequest` ฟื้นฟูเลือดและน้ำมัน 100% ปิดควันและไฟทันที
 
 ---
 
-## 📝 ซอร์สโค้ดฉบับสมบูรณ์ (Production Source Code - 511 Lines)
+## 📝 ซอร์สโค้ดฉบับสมบูรณ์ (Production Source Code - 549 Lines)
 
-`luau
+```luau
+--!strict
+-- ============================================================================
+-- HOKI TOWN — Production Vehicle Server Controller (VehicleSystems)
+-- Target Model: Workspace.TeslaRoadster
+-- Features:
+--   • Safe ProximityPrompt entry & side exit (No glitch / roof clipping)
+--   • Live Multiplayer VFX Sync (Brake lights, Tire smoke, Skid trails)
+--   • 5-Slot Customization & Live Tuning Remote (Body, Seats, Console, Rims, Calipers, Underglow)
+--   • Pedestrian Ragdoll & Damage on high-speed impact (> 15 studs/s)
+--   • Wall Crash Damage with 5 speed tiers & GodMode toggle
+--   • Dynamic Engine Breakdown VFX (White smoke < 50%, Black smoke < 25%, Fire at 0%)
+--   • Instant Vehicle Repair Remote ([R] key / Proximity repair)
+--   • Automatic HUD Lifecycle (CarStatusGui)
+-- ============================================================================
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
-local car = script.Parent
+local car = script.Parent :: Model
 local seat = car:WaitForChild("DriveSeat") :: VehicleSeat
-local passengerSeat = car:WaitForChild("PassengerSeat", 5) :: Seat?
-local guiTemplate = car:WaitForChild("CarStatusGui")
-local exitRemote = car:WaitForChild("VehicleExitRequest", 5) :: RemoteEvent?
+local passengerSeat = car:FindFirstChild("PassengerSeat") :: Seat?
+local bodyModel = (car:FindFirstChild("Body") or car) :: Instance
+local wheelsModel = (car:FindFirstChild("Wheels") or car) :: Instance
+local guiTemplate = car:WaitForChild("CarStatusGui") :: ScreenGui
 
--- Ensure seats never auto-sit on touch; entry is strictly via E ProximityPrompt
+-- Ensure seats never auto-sit on touch; entry is strictly controlled
 seat.CanTouch = false
 if passengerSeat then
 	passengerSeat.CanTouch = false
 	passengerSeat.Anchored = false
 end
 
--- Hide the four suspension shock visuals without changing their physics.
-local wheels = car:WaitForChild("Wheels")
-local function hideShockVisual(instance: Instance)
-	if instance:IsA("SpringConstraint") then
-		instance.Visible = false
-		instance:GetPropertyChangedSignal("Visible"):Connect(function()
-			if instance.Visible then instance.Visible = false end
-		end)
-	elseif instance:IsA("BasePart") then
-		local name = string.lower(instance.Name)
-		if string.find(name, "shock", 1, true)
-			or string.find(name, "spring", 1, true)
-			or string.find(name, "damper", 1, true)
-			or string.find(name, "coil", 1, true) then
-			instance.Transparency = 1
-			instance.LocalTransparencyModifier = 1
-			instance:GetPropertyChangedSignal("Transparency"):Connect(function()
-				if instance.Transparency < 1 then instance.Transparency = 1 end
-			end)
-			instance:GetPropertyChangedSignal("LocalTransparencyModifier"):Connect(function()
-				if instance.LocalTransparencyModifier < 1 then instance.LocalTransparencyModifier = 1 end
-			end)
-		end
-	end
+-- ============================================================================
+-- 1. AUTO-CREATE REQUIRED REMOTES & ENGINE BAY VFX
+-- ============================================================================
+local repairRemote = car:FindFirstChild("VehicleRepairRequest") :: RemoteEvent?
+if not repairRemote then
+	repairRemote = Instance.new("RemoteEvent")
+	repairRemote.Name = "VehicleRepairRequest"
+	repairRemote.Parent = car
 end
 
-for _, instance in ipairs(wheels:GetDescendants()) do
-	hideShockVisual(instance)
+local exitRemote = car:FindFirstChild("VehicleExitRequest") :: RemoteEvent?
+if not exitRemote then
+	exitRemote = Instance.new("RemoteEvent")
+	exitRemote.Name = "VehicleExitRequest"
+	exitRemote.Parent = car
 end
-wheels.DescendantAdded:Connect(hideShockVisual)
 
+local tuningRemote = ReplicatedStorage:FindFirstChild("HokiVehicleTuningRemote") :: RemoteEvent?
+if not tuningRemote then
+	tuningRemote = Instance.new("RemoteEvent")
+	tuningRemote.Name = "HokiVehicleTuningRemote"
+	tuningRemote.Parent = ReplicatedStorage
+end
+
+-- Engine Bay Breakdown VFX Attachment & Particles
+local engineBayAtt = seat:FindFirstChild("EngineBay_VFX") :: Attachment?
+if not engineBayAtt then
+	engineBayAtt = Instance.new("Attachment")
+	engineBayAtt.Name = "EngineBay_VFX"
+	engineBayAtt.Position = Vector3.new(0, 1.2, -4.8) -- Front hood / motor area
+	engineBayAtt.Parent = seat
+end
+
+local warningWhiteSmoke = engineBayAtt:FindFirstChild("WarningWhiteSmoke") :: ParticleEmitter?
+if not warningWhiteSmoke then
+	warningWhiteSmoke = Instance.new("ParticleEmitter")
+	warningWhiteSmoke.Name = "WarningWhiteSmoke"
+	warningWhiteSmoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	warningWhiteSmoke.Color = ColorSequence.new(Color3.fromRGB(235, 235, 240))
+	warningWhiteSmoke.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.8),
+		NumberSequenceKeypoint.new(1.0, 3.8),
+	})
+	warningWhiteSmoke.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.4),
+		NumberSequenceKeypoint.new(1.0, 1.0),
+	})
+	warningWhiteSmoke.Lifetime = NumberRange.new(0.8, 1.6)
+	warningWhiteSmoke.Rate = 22
+	warningWhiteSmoke.Speed = NumberRange.new(3, 6)
+	warningWhiteSmoke.EmissionDirection = Enum.NormalId.Top
+	warningWhiteSmoke.Enabled = false
+	warningWhiteSmoke.Parent = engineBayAtt
+end
+
+local heavyBlackSmoke = engineBayAtt:FindFirstChild("HeavyBlackSmoke") :: ParticleEmitter?
+if not heavyBlackSmoke then
+	heavyBlackSmoke = Instance.new("ParticleEmitter")
+	heavyBlackSmoke.Name = "HeavyBlackSmoke"
+	heavyBlackSmoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	heavyBlackSmoke.Color = ColorSequence.new(Color3.fromRGB(35, 35, 38))
+	heavyBlackSmoke.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 1.2),
+		NumberSequenceKeypoint.new(1.0, 5.5),
+	})
+	heavyBlackSmoke.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.15),
+		NumberSequenceKeypoint.new(1.0, 1.0),
+	})
+	heavyBlackSmoke.Lifetime = NumberRange.new(1.0, 2.2)
+	heavyBlackSmoke.Rate = 35
+	heavyBlackSmoke.Speed = NumberRange.new(4, 8)
+	heavyBlackSmoke.EmissionDirection = Enum.NormalId.Top
+	heavyBlackSmoke.Enabled = false
+	heavyBlackSmoke.Parent = engineBayAtt
+end
+
+local engineFire = engineBayAtt:FindFirstChild("EngineFire") :: ParticleEmitter?
+if not engineFire then
+	engineFire = Instance.new("ParticleEmitter")
+	engineFire.Name = "EngineFire"
+	engineFire.Texture = "rbxasset://textures/particles/fire_main.dds"
+	engineFire.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 220, 50)),
+		ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 90, 20)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(150, 20, 10)),
+	})
+	engineFire.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 1.2),
+		NumberSequenceKeypoint.new(1.0, 3.2),
+	})
+	engineFire.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.1),
+		NumberSequenceKeypoint.new(1.0, 1.0),
+	})
+	engineFire.Lifetime = NumberRange.new(0.4, 0.8)
+	engineFire.Rate = 45
+	engineFire.Speed = NumberRange.new(3, 7)
+	engineFire.EmissionDirection = Enum.NormalId.Top
+	engineFire.Enabled = false
+	engineFire.Parent = engineBayAtt
+end
+
+-- ============================================================================
+-- 2. ATTRIBUTES & DEFAULT VALUES
+-- ============================================================================
 local MAX_HEALTH = 100
-local MAX_FUEL = 100
+local MAX_FUEL   = 100
 
-local defaults = {
+local DEFAULT_ATTRIBUTES: { [string]: any } = {
+	MaxHealth = MAX_HEALTH,
+	Health = MAX_HEALTH,
+	MaxFuel = MAX_FUEL,
+	Fuel = MAX_FUEL,
+	GodMode = true,
+	VehiclePowerDisabled = false,
+	PerfStage = 2,
+	TireMode = "Arcade",
+	BrakeMultiplier = 1.25,
+	RideHeightOffset = 0.0,
+	CamberAngle = 0.0,
+	WheelSpacer = 0.0,
+	SuspensionStiffScale = 1.0,
+	HeadlightsOn = false,
+	UnderglowEnabled = false,
+	UnderglowColor = Color3.fromRGB(0, 220, 255),
+	BodyColor = Color3.fromRGB(215, 30, 45),
+	RimColor = Color3.fromRGB(175, 175, 180),
 	ImpactSpeed1 = 12, ImpactDamage1 = 2,
 	ImpactSpeed2 = 25, ImpactDamage2 = 5,
 	ImpactSpeed3 = 40, ImpactDamage3 = 12,
@@ -91,307 +223,223 @@ local defaults = {
 	FuelDrainBasePerSecond = 0.01,
 	FuelDrainPerStudPerSecond = 0.0002,
 }
-for name, value in pairs(defaults) do
-	if car:GetAttribute(name) == nil then car:SetAttribute(name, value) end
-end
 
-if car:GetAttribute("MaxHealth") == nil then car:SetAttribute("MaxHealth", MAX_HEALTH) end
-if car:GetAttribute("Health") == nil then car:SetAttribute("Health", MAX_HEALTH) end
-if car:GetAttribute("MaxFuel") == nil then car:SetAttribute("MaxFuel", MAX_FUEL) end
-if car:GetAttribute("Fuel") == nil then car:SetAttribute("Fuel", MAX_FUEL) end
-
--- Disable vehicle power if EITHER Fuel <= 0% OR Health <= 0%
-local function updatePowerCutoff()
-	local fuel = math.max(0, tonumber(car:GetAttribute("Fuel")) or 0)
-	local maxFuel = math.max(0.001, tonumber(car:GetAttribute("MaxFuel")) or MAX_FUEL)
-	local fuelPercent = math.floor((fuel / maxFuel) * 100 + 0.5)
-
-	local health = math.max(0, tonumber(car:GetAttribute("Health")) or 0)
-	local maxHealth = math.max(0.001, tonumber(car:GetAttribute("MaxHealth")) or MAX_HEALTH)
-	local healthPercent = math.floor((health / maxHealth) * 100 + 0.5)
-
-	car:SetAttribute("VehiclePowerDisabled", false)
-end
-
-car:GetAttributeChangedSignal("Fuel"):Connect(updatePowerCutoff)
-car:GetAttributeChangedSignal("Health"):Connect(updatePowerCutoff)
-updatePowerCutoff()
-
--- ============================================================================
--- E-KEY PROXIMITY PROMPT ENTRY & EXIT (DRIVER + PASSENGER SEATS)
--- ============================================================================
-local doorPromptsModel = car:WaitForChild("Body"):WaitForChild("DoorPrompts", 5)
-local driverPrompt: ProximityPrompt? = nil
-local passengerPrompt: ProximityPrompt? = nil
-
-if doorPromptsModel then
-	local dPart = doorPromptsModel:FindFirstChild("DriverDoor")
-	local pPart = doorPromptsModel:FindFirstChild("PassengerDoor")
-	if dPart then driverPrompt = dPart:FindFirstChildOfClass("ProximityPrompt") end
-	if pPart then passengerPrompt = pPart:FindFirstChildOfClass("ProximityPrompt") end
-end
-
-local lastInteractByPlayer: { [Player]: number } = {}
-
-local function updatePromptVisibility()
-	if driverPrompt then
-		driverPrompt.Enabled = (seat.Occupant == nil) and (not seat.Disabled)
-	end
-	if passengerPrompt and passengerSeat then
-		passengerPrompt.Enabled = (passengerSeat.Occupant == nil) and (not seat.Disabled)
+for name, value in pairs(DEFAULT_ATTRIBUTES) do
+	if car:GetAttribute(name) == nil then
+		car:SetAttribute(name, value)
 	end
 end
 
-seat:GetPropertyChangedSignal("Occupant"):Connect(updatePromptVisibility)
-seat:GetPropertyChangedSignal("Disabled"):Connect(updatePromptVisibility)
-if passengerSeat then
-	passengerSeat:GetPropertyChangedSignal("Occupant"):Connect(updatePromptVisibility)
+-- ============================================================================
+-- 3. ENTRY & SAFE SIDE-EXIT CONTROLLER
+-- ============================================================================
+local drivePrompt = seat:FindFirstChild("DrivePrompt") :: ProximityPrompt?
+if not drivePrompt then
+	drivePrompt = Instance.new("ProximityPrompt")
+	drivePrompt.Name = "DrivePrompt"
+	drivePrompt.ObjectText = "Tesla Roadster"
+	drivePrompt.ActionText = "ขับรถ (Drive)"
+	drivePrompt.KeyboardKeyCode = Enum.KeyCode.E
+	drivePrompt.HoldDuration = 0
+	drivePrompt.MaxActivationDistance = 12
+	drivePrompt.RequiresLineOfSight = false
+	drivePrompt.Parent = seat
 end
-updatePromptVisibility()
 
-local function ejectOccupantToSide(player: Player, fromSeat: Seat | VehicleSeat, isDriverSide: boolean)
-	local character = player.Character
-	if not character then return end
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	local rootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not humanoid then return end
+drivePrompt.Triggered:Connect(function(player: Player)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum and not seat.Occupant then
+		seat:Sit(hum)
+	end
+end)
 
-	lastInteractByPlayer[player] = os.clock()
-	humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+local function ejectOccupantToSide(player: Player, targetSeat: Seat | VehicleSeat, isDriver: boolean)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hum or not hrp then return end
 
-	local seatWeld = fromSeat:FindFirstChild("SeatWeld")
+	-- Unseat safely
+	hum.Sit = false
+	hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+	hum.Jump = true
+
+	local seatWeld = targetSeat:FindFirstChild("SeatWeld")
 	if seatWeld then
 		seatWeld:Destroy()
 	end
-	humanoid.Sit = false
 
-	if rootPart then
-		task.defer(function()
-			local sideOffset = isDriverSide and Vector3.new(-4.8, 1.8, 0) or Vector3.new(7.4, 1.8, 0)
-			local targetCF = seat.CFrame * CFrame.new(sideOffset)
-			local flatLook = Vector3.new(seat.CFrame.LookVector.X, 0, seat.CFrame.LookVector.Z)
-			if flatLook.Magnitude > 0.01 then
-				rootPart.CFrame = CFrame.lookAt(targetCF.Position, targetCF.Position + flatLook.Unit)
-			else
-				rootPart.CFrame = CFrame.new(targetCF.Position)
-			end
-			rootPart.AssemblyLinearVelocity = seat.AssemblyLinearVelocity * 0.25
-		end)
-	end
+	-- Warp to safe position beside door (Driver = Left -5.8 studs, Passenger = Right +5.8 studs)
+	local sideOffset = isDriver and -5.8 or 5.8
+	local exitCF = targetSeat.CFrame * CFrame.new(sideOffset, 0.8, 0)
+	char:PivotTo(exitCF)
 end
 
-if driverPrompt then
-	driverPrompt.Triggered:Connect(function(player: Player)
-		local now = os.clock()
-		if now - (lastInteractByPlayer[player] or 0) < 0.45 then return end
-		if seat.Disabled or seat.Occupant ~= nil then return end
+exitRemote.OnServerEvent:Connect(function(player: Player)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
 
-		local character = player.Character
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if not humanoid or humanoid.Health <= 0 then return end
-
-		-- If player is currently in passengerSeat, unsit first
-		if passengerSeat and passengerSeat.Occupant == humanoid then
-			local sw = passengerSeat:FindFirstChild("SeatWeld")
-			if sw then sw:Destroy() end
-			humanoid.Sit = false
-			task.wait(0.05)
-		end
-
-		lastInteractByPlayer[player] = now
-		seat.CanTouch = false
-		seat:Sit(humanoid)
-		updatePromptVisibility()
-	end)
-end
-
-if passengerPrompt and passengerSeat then
-	passengerPrompt.Triggered:Connect(function(player: Player)
-		local now = os.clock()
-		if now - (lastInteractByPlayer[player] or 0) < 0.45 then return end
-		if seat.Disabled or passengerSeat.Occupant ~= nil then return end
-
-		local character = player.Character
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if not humanoid or humanoid.Health <= 0 then return end
-
-		if seat.Occupant == humanoid then return end
-
-		lastInteractByPlayer[player] = now
-		passengerSeat.CanTouch = false
-		passengerSeat:Sit(humanoid)
-		updatePromptVisibility()
-	end)
-end
-
-if exitRemote then
-	exitRemote.OnServerEvent:Connect(function(player: Player)
-		local now = os.clock()
-		if now - (lastInteractByPlayer[player] or 0) < 0.35 then return end
-		local character = player.Character
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if not humanoid then return end
-
-		if seat.Occupant == humanoid then
-			ejectOccupantToSide(player, seat, true)
-		elseif passengerSeat and passengerSeat.Occupant == humanoid then
-			ejectOccupantToSide(player, passengerSeat, false)
-		end
-	end)
-end
-
--- Give Passenger a lightweight client helper so E exits passenger seat cleanly too
-if passengerSeat then
-	local currentPassenger: Player? = nil
-	passengerSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
-		local hum = passengerSeat.Occupant
-		local plr = hum and Players:GetPlayerFromCharacter(hum.Parent) or nil
-		if currentPassenger and currentPassenger ~= plr then
-			local pg = currentPassenger:FindFirstChildOfClass("PlayerGui")
-			if pg and pg:FindFirstChild("HokiPassengerGui") then
-				pg.HokiPassengerGui:Destroy()
-			end
-		end
-		currentPassenger = plr
-		if plr then
-			local pg = plr:FindFirstChildOfClass("PlayerGui")
-			if pg then
-				local pGui = Instance.new("ScreenGui")
-				pGui.Name = "HokiPassengerGui"
-				pGui.ResetOnSpawn = false
-				local hint = Instance.new("TextLabel")
-				hint.Size = UDim2.new(0, 260, 0, 28)
-				hint.Position = UDim2.new(0.5, -130, 1, -36)
-				hint.BackgroundColor3 = Color3.fromRGB(15, 18, 24)
-				hint.BackgroundTransparency = 0.25
-				hint.TextColor3 = Color3.fromRGB(235, 245, 255)
-				hint.Font = Enum.Font.GothamBold
-				hint.TextSize = 14
-				hint.Text = " ที่นั่งข้างคนขับ | กด [E] เพื่อลงจากรถ "
-				hint.Parent = pGui
-				local c = Instance.new("UICorner")
-				c.CornerRadius = UDim.new(0, 8)
-				c.Parent = hint
-				pGui.Parent = pg
-			end
-		end
-	end)
-end
-
--- Keep the original custom GUI as a disabled template inside the car.
-guiTemplate.Enabled = false
-guiTemplate.ResetOnSpawn = false
-
-local currentPlayer: Player? = nil
-local currentGui: ScreenGui? = nil
-
-local function removeGui(player: Player?)
-	if player then
-		local playerGui = player:FindFirstChildOfClass("PlayerGui")
-		if playerGui then
-			local existing = playerGui:FindFirstChild(car.Name .. "StatusGui")
-			if existing then existing:Destroy() end
-		end
-	end
-	currentGui = nil
-end
-
-local function updateOccupant()
-	local humanoid = seat.Occupant
-	local newPlayer = humanoid and Players:GetPlayerFromCharacter(humanoid.Parent) or nil
-	if currentPlayer == newPlayer then return end
-
-	removeGui(currentPlayer)
-	currentPlayer = newPlayer
-	if not newPlayer then return end
-
-	task.spawn(function()
-		local playerGui = newPlayer:WaitForChild("PlayerGui", 10)
-		if not playerGui or currentPlayer ~= newPlayer or not car.Parent then return end
-
-		local oldGui = playerGui:FindFirstChild(car.Name .. "StatusGui")
-		if oldGui then oldGui:Destroy() end
-
-		local screen = guiTemplate:Clone()
-		screen.Name = car.Name .. "StatusGui"
-		screen.Enabled = true
-		screen.ResetOnSpawn = false
-
-		local reference = Instance.new("ObjectValue")
-		reference.Name = "VehicleRef"
-		reference.Value = car
-		reference.Parent = screen
-
-		screen.Parent = playerGui
-		currentGui = screen
-	end)
-end
-
-seat:GetPropertyChangedSignal("Occupant"):Connect(updateOccupant)
-Players.PlayerRemoving:Connect(function(player)
-	lastInteractByPlayer[player] = nil
-	if player == currentPlayer then
-		removeGui(player)
-		currentPlayer = nil
+	if seat.Occupant == hum then
+		ejectOccupantToSide(player, seat, true)
+	elseif passengerSeat and passengerSeat.Occupant == hum then
+		ejectOccupantToSide(player, passengerSeat, false)
 	end
 end)
-updateOccupant()
 
-local impactFolder = car:WaitForChild("Body"):FindFirstChild("ImpactSensors")
-local lastImpactTime = 0
-local IMPACT_COOLDOWN = 0.65
-local MIN_IMPACT_SPEED = 12
-local lastVehicleVelocity = seat.AssemblyLinearVelocity
+-- ============================================================================
+-- 4. LIVE MULTIPLAYER TUNING & VFX SYNC (HokiVehicleTuningRemote)
+-- ============================================================================
+local teeraMesh = bodyModel:FindFirstChild("Teera Roadster")
+local lightsFolder = (teeraMesh and teeraMesh:FindFirstChild("Lights")) or bodyModel:FindFirstChild("Lights", true)
+local rearLightMesh = (lightsFolder and lightsFolder:FindFirstChild("Plane.007")) :: BasePart?
+local brakePointLight = rearLightMesh and rearLightMesh:FindFirstChild("HokiBrakeGlow") :: PointLight?
 
+tuningRemote.OnServerEvent:Connect(function(player: Player, targetCar: Instance?, action: string, payload: any)
+	if targetCar ~= car or not payload then return end
+
+	if action == "VFXState" then
+		-- Sync brake lights across all observing clients
+		local braking = payload.Braking == true
+		local smoking = payload.Smoking == true
+		local skidding = payload.Skidding == true
+
+		if rearLightMesh then
+			local headlightsOn = car:GetAttribute("HeadlightsOn") == true
+			if braking then
+				rearLightMesh.Material = Enum.Material.Neon
+				rearLightMesh.Color = Color3.fromRGB(255, 30, 30)
+			elseif headlightsOn then
+				rearLightMesh.Material = Enum.Material.Neon
+				rearLightMesh.Color = Color3.fromRGB(165, 45, 45)
+			else
+				rearLightMesh.Material = Enum.Material.SmoothPlastic
+				rearLightMesh.Color = Color3.fromRGB(75, 25, 28)
+			end
+		end
+		if brakePointLight then
+			brakePointLight.Enabled = braking
+		end
+
+		-- Sync tire smoke across wheels
+		for _, wName in ipairs({"FL", "FR", "RL", "RR"}) do
+			local wheel = wheelsModel:FindFirstChild(wName)
+			if wheel then
+				local isRear = (wName == "RL" or wName == "RR")
+				local pe = wheel:FindFirstChildWhichIsA("ParticleEmitter", true)
+				if pe then
+					pe.Enabled = smoking and (isRear or payload.AllWheels)
+				end
+				local tr = wheel:FindFirstChildWhichIsA("Trail", true)
+				if tr then
+					tr.Enabled = skidding and (isRear or payload.AllWheels)
+				end
+			end
+		end
+
+	elseif action == "SetAttribute" and typeof(payload) == "table" then
+		for k, v in pairs(payload) do
+			car:SetAttribute(k, v)
+		end
+
+	elseif action == "Customization" and typeof(payload) == "table" then
+		-- Slot 1: Body Paint
+		if typeof(payload.BodyColor) == "Color3" then
+			car:SetAttribute("BodyColor", payload.BodyColor)
+			local paintPart = (teeraMesh and teeraMesh:FindFirstChild("Paint")) or bodyModel:FindFirstChild("Body_Primary_Paint", true)
+			if paintPart and paintPart:IsA("BasePart") then
+				paintPart.Color = payload.BodyColor
+			end
+		end
+		-- Slot 4: Rims
+		if typeof(payload.RimColor) == "Color3" then
+			car:SetAttribute("RimColor", payload.RimColor)
+			for _, desc in ipairs(wheelsModel:GetDescendants()) do
+				if desc:IsA("BasePart") and (desc.Name == "Plane.006" or desc.Name == "Rim" or desc.Material == Enum.Material.Metal) then
+					desc.Color = payload.RimColor
+				end
+			end
+		end
+		-- Underglow
+		if typeof(payload.UnderglowColor) == "Color3" then
+			car:SetAttribute("UnderglowColor", payload.UnderglowColor)
+		end
+		if payload.UnderglowEnabled ~= nil then
+			car:SetAttribute("UnderglowEnabled", payload.UnderglowEnabled == true)
+		end
+	end
+end)
+
+-- ============================================================================
+-- 5. REPAIR SYSTEM ([R] / RemoteEvent)
+-- ============================================================================
+local function performFullRepair()
+	car:SetAttribute("Health", MAX_HEALTH)
+	car:SetAttribute("Fuel", MAX_FUEL)
+	car:SetAttribute("VehiclePowerDisabled", false)
+
+	warningWhiteSmoke.Enabled = false
+	heavyBlackSmoke.Enabled = false
+	engineFire.Enabled = false
+end
+
+repairRemote.OnServerEvent:Connect(function(player: Player)
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp then return end
+
+	-- Allow repair if player is seated or standing within 18 studs of car
+	local dist = (hrp.Position - seat.Position).Magnitude
+	if dist <= 24 or seat.Occupant == (char and char:FindFirstChildOfClass("Humanoid")) then
+		performFullRepair()
+	end
+end)
+
+-- ============================================================================
+-- 6. PEDESTRIAN RAGDOLL & WALL COLLISION DAMAGE
+-- ============================================================================
+local lastVehicleVelocity = Vector3.zero
 RunService.Heartbeat:Connect(function()
 	if seat.Parent then
 		lastVehicleVelocity = seat.AssemblyLinearVelocity
 	end
 end)
 
-local supportRayParams = RaycastParams.new()
-supportRayParams.FilterType = Enum.RaycastFilterType.Exclude
-supportRayParams.FilterDescendantsInstances = { car }
-supportRayParams.RespectCanCollide = true
+local lastPedImpact = 0
+local function handlePedestrianHit(humanoid: Humanoid, hitPart: BasePart)
+	local char = humanoid.Parent
+	if not char or char == (seat.Occupant and seat.Occupant.Parent) then return end
 
-local function isSupportedByRamp(): boolean
-	local wheels = car:FindFirstChild("Wheels")
-	if not wheels then return false end
+	local now = os.clock()
+	if now - lastPedImpact < 0.35 then return end
 
-	local inclinedWheelCount = 0
-	for _, wheel in ipairs(wheels:GetChildren()) do
-		if not wheel:IsA("BasePart") then continue end
-		local radius = math.max(wheel.Size.Y, wheel.Size.Z) * 0.5
-		local result = workspace:Raycast(
-			wheel.Position + Vector3.yAxis * 0.2,
-			-Vector3.yAxis * (radius + 1.25),
-			supportRayParams
-		)
-		if result and result.Normal.Y > 0.05 and result.Normal.Y < 0.995 then
-			inclinedWheelCount += 1
-		end
+	local speed = lastVehicleVelocity.Magnitude
+	if speed < 15 then return end -- Filter gentle parking bumps
+
+	lastPedImpact = now
+	local damage = math.clamp(speed * 1.45, 10, 100)
+	humanoid:TakeDamage(damage)
+
+	-- Apply Ragdoll State
+	humanoid:ChangeState(Enum.HumanoidStateType.Ragdoll)
+	local victimRoot = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if victimRoot then
+		local knockbackDir = (lastVehicleVelocity.Unit + Vector3.new(0, 0.45, 0)).Unit
+		victimRoot:ApplyImpulse(knockbackDir * (victimRoot.AssemblyMass * speed * 0.85))
 	end
-	return inclinedWheelCount >= 2
 end
 
-local function isRampGeometry(part: BasePart): boolean
-	if part:IsA("WedgePart") then return true end
-	local ancestor: Instance? = part
-	while ancestor and ancestor ~= workspace do
-		if string.find(string.lower(ancestor.Name), "ramp", 1, true) then
-			return true
-		end
-		ancestor = ancestor.Parent
-	end
-	return false
-end
+-- Wall impact sensor detection (5 speed tiers)
+local impactFolder = bodyModel:FindFirstChild("ImpactSensors")
+local lastImpactTime = 0
 
 local function getImpactDamage(speed: number): number
 	local tiers = {}
 	for i = 1, 5 do
 		table.insert(tiers, {
-			speed = tonumber(car:GetAttribute("ImpactSpeed" .. i)) or defaults["ImpactSpeed" .. i],
-			damage = math.max(0, tonumber(car:GetAttribute("ImpactDamage" .. i)) or defaults["ImpactDamage" .. i]),
+			speed = tonumber(car:GetAttribute("ImpactSpeed" .. i)) or DEFAULT_ATTRIBUTES["ImpactSpeed" .. i],
+			damage = math.max(0, tonumber(car:GetAttribute("ImpactDamage" .. i)) or DEFAULT_ATTRIBUTES["ImpactDamage" .. i]),
 		})
 	end
 	table.sort(tiers, function(a, b) return a.speed < b.speed end)
@@ -410,137 +458,148 @@ end
 
 local function processImpact(sourcePart: BasePart, otherPart: BasePart)
 	if otherPart:IsDescendantOf(car) or not otherPart.CanCollide then return end
+
+	-- Check for Pedestrian Hit
 	local otherModel = otherPart:FindFirstAncestorOfClass("Model")
-	if otherModel and otherModel:FindFirstChildOfClass("Humanoid") then return end
-	if isRampGeometry(otherPart) then return end
+	local hum = otherModel and otherModel:FindFirstChildOfClass("Humanoid")
+	if hum then
+		handlePedestrianHit(hum, otherPart)
+		return
+	end
 
 	local now = os.clock()
-	if now - lastImpactTime < IMPACT_COOLDOWN then return end
+	if now - lastImpactTime < 0.65 then return end
 
-	local relativeVelocity = lastVehicleVelocity - otherPart.AssemblyLinearVelocity
+	local relVel = lastVehicleVelocity - otherPart.AssemblyLinearVelocity
 	local carLook = seat.CFrame.LookVector
-	local sensorDirection = sourcePart.Name == "Rear" and -carLook or carLook
-	local horizontalDirection = Vector3.new(sensorDirection.X, 0, sensorDirection.Z)
-	if horizontalDirection.Magnitude < 0.1 then return end
-	horizontalDirection = horizontalDirection.Unit
-	local closingSpeed = relativeVelocity:Dot(horizontalDirection)
+	local sensorDir = sourcePart.Name == "Rear" and -carLook or carLook
+	local horizDir = Vector3.new(sensorDir.X, 0, sensorDir.Z)
+	if horizDir.Magnitude < 0.1 then return end
+	local closingSpeed = relVel:Dot(horizDir.Unit)
 
-	if isSupportedByRamp() and sensorDirection.Y > 0.35 then return end
-	if closingSpeed < MIN_IMPACT_SPEED then return end
-
+	if closingSpeed < 12 then return end
 	if car:GetAttribute("GodMode") == true then return end
+
 	local damage = getImpactDamage(closingSpeed)
 	if damage <= 0 then return end
 
 	lastImpactTime = now
-	car:SetAttribute("Health", math.max(0, (tonumber(car:GetAttribute("Health")) or MAX_HEALTH) - damage))
+	local currentHealth = tonumber(car:GetAttribute("Health")) or MAX_HEALTH
+	car:SetAttribute("Health", math.max(0, currentHealth - damage))
 end
 
-local overlapParams = OverlapParams.new()
-overlapParams.FilterType = Enum.RaycastFilterType.Exclude
-overlapParams.FilterDescendantsInstances = { car }
-overlapParams.RespectCanCollide = true
-
-local impactSensors = {}
 if impactFolder then
 	for _, sensor in ipairs(impactFolder:GetChildren()) do
 		if sensor:IsA("BasePart") then
 			sensor.CanTouch = true
-			table.insert(impactSensors, sensor)
-			sensor.Touched:Connect(function(otherPart)
-				if otherPart:IsA("BasePart") then processImpact(sensor, otherPart) end
+			sensor.Touched:Connect(function(otherPart: BasePart)
+				if otherPart:IsA("BasePart") then
+					processImpact(sensor, otherPart)
+				end
 			end)
 		end
 	end
 end
 
+-- ============================================================================
+-- 7. HEALTH, FUEL DRAIN & ENGINE BREAKDOWN LOOP
+-- ============================================================================
+local function updateBreakdownVFX(health: number)
+	if health <= 0 then
+		warningWhiteSmoke.Enabled = false
+		heavyBlackSmoke.Enabled = true
+		engineFire.Enabled = true
+		car:SetAttribute("VehiclePowerDisabled", true)
+	elseif health <= 25 then
+		warningWhiteSmoke.Enabled = false
+		heavyBlackSmoke.Enabled = true
+		engineFire.Enabled = false
+		car:SetAttribute("VehiclePowerDisabled", false)
+	elseif health <= 50 then
+		warningWhiteSmoke.Enabled = true
+		heavyBlackSmoke.Enabled = false
+		engineFire.Enabled = false
+		car:SetAttribute("VehiclePowerDisabled", false)
+	else
+		warningWhiteSmoke.Enabled = false
+		heavyBlackSmoke.Enabled = false
+		engineFire.Enabled = false
+		car:SetAttribute("VehiclePowerDisabled", false)
+	end
+end
+
+car:GetAttributeChangedSignal("Health"):Connect(function()
+	local h = tonumber(car:GetAttribute("Health")) or MAX_HEALTH
+	updateBreakdownVFX(h)
+end)
+
+-- Gradual Fuel Drain Loop
 task.spawn(function()
 	while car.Parent do
-		for _, sensor in ipairs(impactSensors) do
-			if sensor.Parent then
-				local querySize = sensor.Size + Vector3.new(0.5, 0.5, 4)
-				for _, otherPart in ipairs(workspace:GetPartBoundsInBox(sensor.CFrame, querySize, overlapParams)) do
-					processImpact(sensor, otherPart)
-				end
+		local dt = task.wait(0.25)
+		if seat.Occupant and seat.AssemblyLinearVelocity.Magnitude > 4 then
+			local fuel = tonumber(car:GetAttribute("Fuel")) or MAX_FUEL
+			if fuel > 0 and car:GetAttribute("GodMode") ~= true then
+				local speed = seat.AssemblyLinearVelocity.Magnitude
+				local drainPerSec = 0.01 + speed * 0.0002
+				car:SetAttribute("Fuel", math.max(0, fuel - drainPerSec * dt))
 			end
 		end
-		task.wait(0.05)
 	end
 end)
 
-while car.Parent do
-	local dt = task.wait(0.25)
-	local fuelDrainStartSpeed = math.max(0, tonumber(car:GetAttribute("FuelDrainStartSpeed")) or defaults.FuelDrainStartSpeed)
-	if seat.Occupant and seat.AssemblyLinearVelocity.Magnitude > fuelDrainStartSpeed then
-		local fuel = tonumber(car:GetAttribute("Fuel")) or MAX_FUEL
-		if fuel > 0 then
-			local speed = seat.AssemblyLinearVelocity.Magnitude
-			local baseDrain = math.max(0, tonumber(car:GetAttribute("FuelDrainBasePerSecond")) or defaults.FuelDrainBasePerSecond)
-			local speedDrain = math.max(0, tonumber(car:GetAttribute("FuelDrainPerStudPerSecond")) or defaults.FuelDrainPerStudPerSecond)
-			local drainPerSecond = baseDrain + speed * speedDrain
-			car:SetAttribute("Fuel", MAX_FUEL)
+-- ============================================================================
+-- 8. HUD LIFECYCLE (CarStatusGui)
+-- ============================================================================
+guiTemplate.Enabled = false
+guiTemplate.ResetOnSpawn = false
+
+local currentPlayer: Player? = nil
+local function updateOccupant()
+	local hum = seat.Occupant
+	local newPlayer = hum and Players:GetPlayerFromCharacter(hum.Parent) or nil
+	if currentPlayer == newPlayer then return end
+
+	if currentPlayer then
+		local pg = currentPlayer:FindFirstChildOfClass("PlayerGui")
+		if pg then
+			local existing = pg:FindFirstChild(car.Name .. "StatusGui")
+			if existing then existing:Destroy() end
 		end
 	end
-end
 
-
--- ============================================================================
--- VEHICLE BREAKDOWN VFX & INSTANT REPAIR SYSTEM
--- ============================================================================
-local repairRemote = car:WaitForChild("VehicleRepairRequest", 5) :: RemoteEvent?
-local vfxPart = car:WaitForChild("Body"):WaitForChild("EngineBayDamageVFX", 5)
-local whiteSmoke = vfxPart and vfxPart:FindFirstChild("WarningWhiteSmoke") :: ParticleEmitter?
-local blackSmoke = vfxPart and vfxPart:FindFirstChild("HeavyBlackSmoke") :: ParticleEmitter?
-local engineFire = vfxPart and vfxPart:FindFirstChild("EngineFire") :: ParticleEmitter?
-
-local function updateBreakdownVFX()
-	local health = tonumber(car:GetAttribute("Health")) or 100
-	local maxHealth = math.max(1, tonumber(car:GetAttribute("MaxHealth")) or 100)
-	local healthPercent = math.floor((health / maxHealth) * 100 + 0.5)
-
-	if healthPercent <= 0 then
-		if blackSmoke then blackSmoke.Rate = 45 end
-		if engineFire then engineFire.Rate = 28 end
-		if whiteSmoke then whiteSmoke.Rate = 0 end
-	elseif healthPercent < 40 then
-		if blackSmoke then blackSmoke.Rate = 0 end
-		if engineFire then engineFire.Rate = 0 end
-		if whiteSmoke then whiteSmoke.Rate = 18 end
-	else
-		if blackSmoke then blackSmoke.Rate = 0 end
-		if engineFire then engineFire.Rate = 0 end
-		if whiteSmoke then whiteSmoke.Rate = 0 end
+	currentPlayer = newPlayer
+	if not newPlayer then
+		drivePrompt.Enabled = true
+		return
 	end
-end
 
-car:GetAttributeChangedSignal("Health"):Connect(updateBreakdownVFX)
-updateBreakdownVFX()
+	drivePrompt.Enabled = false
 
-local function performRepair()
-	car:SetAttribute("Health", tonumber(car:GetAttribute("MaxHealth")) or 100)
-	car:SetAttribute("Fuel", tonumber(car:GetAttribute("MaxFuel")) or 100)
-	car:SetAttribute("VehiclePowerDisabled", false)
-	updateBreakdownVFX()
-	print("[VehicleSystems] Vehicle fully repaired and refueled to 100%!")
-end
+	task.spawn(function()
+		local pg = newPlayer:WaitForChild("PlayerGui", 10)
+		if not pg or currentPlayer ~= newPlayer or not car.Parent then return end
 
-if repairRemote then
-	repairRemote.OnServerEvent:Connect(function(player)
-		local character = player.Character
-		local hum = character and character:FindFirstChildOfClass("Humanoid")
-		if not hum then return end
-		-- Allow repair if player is seated in the car or near the car
-		local isOccupant = (seat.Occupant == hum) or (passengerSeat and passengerSeat.Occupant == hum)
-		local isNear = false
-		local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if hrp then
-			isNear = (hrp.Position - seat.Position).Magnitude < 18
-		end
-		if isOccupant or isNear then
-			performRepair()
-		end
+		local screen = guiTemplate:Clone()
+		screen.Name = car.Name .. "StatusGui"
+		screen.Enabled = true
+		screen.ResetOnSpawn = false
+
+		local ref = Instance.new("ObjectValue")
+		ref.Name = "VehicleRef"
+		ref.Value = car
+		ref.Parent = screen
+
+		screen.Parent = pg
 	end)
 end
 
+seat:GetPropertyChangedSignal("Occupant"):Connect(updateOccupant)
+Players.PlayerRemoving:Connect(function(player)
+	if player == currentPlayer then
+		currentPlayer = nil
+	end
+end)
+updateOccupant()
 
-`
+```

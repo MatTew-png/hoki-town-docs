@@ -1,3 +1,18 @@
+---
+project: HOKI TOWN
+script_name: BarrelExplosions_Server
+script_type: Script (Server)
+datamodel_location: Workspace.ExplosiveBarrels.BarrelExplosions
+lines_of_code: 58
+respawn_cycle_sec: 25
+tags:
+  - server-script
+  - explosive-hazards
+  - physics-damage
+  - chain-reaction
+  - production-code
+---
+
 # 📜 BarrelExplosions (Server Script)
 
 > **ตำแหน่งเดิมใน DataModel:** `Workspace.ExplosiveBarrels.BarrelExplosions`  

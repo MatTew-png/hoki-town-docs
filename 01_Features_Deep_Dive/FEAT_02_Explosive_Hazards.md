@@ -1,3 +1,23 @@
+---
+project: HOKI TOWN
+feature_id: HAZ-01
+category: feature-deep-dive
+system: environmental-hazards
+datamodel_location: Workspace.ExplosiveBarrels
+script_name: BarrelExplosions
+barrel_count: 10
+respawn_time_sec: 25
+status: implemented
+priority: medium
+last_audit: 2026-11-04
+tags:
+  - hazards
+  - explosive-barrel
+  - chain-reaction
+  - environment
+  - damage-physics
+---
+
 # 💥 FEAT-02: Explosive Hazards (ระบบถังระเบิดในฉาก)
 
 > **ตำแหน่งใน DataModel:** `Workspace.ExplosiveBarrels`  

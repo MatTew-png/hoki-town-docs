@@ -1,3 +1,23 @@
+---
+project: HOKI TOWN
+feature_id: RP-01
+category: feature-deep-dive
+system: fivem-interaction-points
+datamodel_location: Workspace.Fivem_pack_v2
+markers:
+  - Summon_Car
+  - Water_pump
+status: prototype
+priority: medium
+last_audit: 2026-11-04
+tags:
+  - fivem-rp
+  - interaction-points
+  - garage-spawner
+  - roleplay-mechanics
+  - todo
+---
+
 # 📍 FEAT-04: FiveM Roleplay Interaction Points (จุดอินเตอร์แอ็กชันสไตล์ FiveM GTA)
 
 > **ตำแหน่งใน DataModel:** `Workspace.Fivem_pack_v2`  

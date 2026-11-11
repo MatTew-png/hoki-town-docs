@@ -1,3 +1,23 @@
+---
+project: HOKI TOWN
+script_name: VehicleStatusClient_Local
+script_type: LocalScript
+datamodel_location: Workspace.TeslaRoadster.CarStatusGui.VehicleStatusClient
+lines_of_code: 110
+refresh_rate_fps: 60
+features:
+  - speedometer
+  - gear-indicator
+  - health-bar
+  - quick-repair-key-r
+tags:
+  - client-script
+  - car-hud
+  - gui-render
+  - critical-fix
+  - production-code
+---
+
 # 📜 VehicleStatusClient (LocalScript)
 
 > **ตำแหน่งใน DataModel:** `Workspace.TeslaRoadster.CarStatusGui.VehicleStatusClient`  

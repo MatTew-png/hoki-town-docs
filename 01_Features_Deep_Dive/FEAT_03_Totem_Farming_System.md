@@ -1,3 +1,25 @@
+---
+project: HOKI TOWN
+feature_id: JOB-01
+category: feature-deep-dive
+system: totem-farming
+datamodel_location: Workspace.TotemFarm_Pack
+script_name: TotemAnimation
+farms:
+  - FarmLungA
+  - FarmBanana
+  - FarmMelon
+status: partial
+priority: high
+last_audit: 2026-11-04
+tags:
+  - farming-system
+  - totem-animation
+  - economy
+  - gathering-mechanics
+  - kinematic-cframe
+---
+
 # 🌾 FEAT-03: Totem Farming System (ระบบแท่นฟาร์มและจุดเก็บเกี่ยว)
 
 > **ตำแหน่งใน DataModel:** `Workspace.TotemFarm_Pack`  
