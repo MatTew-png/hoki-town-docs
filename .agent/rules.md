@@ -25,9 +25,10 @@ Rules for AI agents working in the **HOKI TOWN** Roblox codebase and Obsidian va
 - **Rojo = Single Source of Truth for Code:** Edit `.luau` files exclusively under `src/` per `default.project.json`; never overwrite Rojo-managed `.Source` via Studio MCP.
 - **Studio MCP = Eyes, 3D Assembly & Playtest:** Use MCP to inspect DataModel hierarchy/attributes, weld/arrange Studio 3D models, and run playtest telemetry checks (`Inspect -> Prepare -> Write -> Verify`).
 
-## 3. Luau Code, Security & Pre-Flight Standards
-*(Details in `.agents/skills/luau-syntax-guardian/SKILL.md` and `.agents/skills/roblox-vehicle-scripting/SKILL.md`)*
+## 3. Luau Code, Architecture & Pre-Flight Standards
+*(Details in `.agents/skills/roblox-mvc-architecture/SKILL.md`, `luau-syntax-guardian/SKILL.md`, and `roblox-vehicle-scripting/SKILL.md`)*
+- **Architecture & Assets:** Use MVC (`Controller`/`Model`/`View`/`Gateway`) + `Init()`/`Destroy()` lifecycle for new gameplay, UI, and backend systems; keep vehicle physics loops direct. Use hand-authored Studio assets via `WaitForChild("ExactName")` instead of procedural UI trees unless requested.
 - **Security:** Validate player permissions, distance (`Magnitude < 15`), and payloads on the Server; never trust client `RemoteEvent` arguments.
-- **Safety & Hygiene:** Use `--!strict` / type annotations on new modules, guard clauses over deep nesting, disconnect every `RBXScriptConnection` on destroy, and use modern APIs (`task.wait`, `task.spawn`, `task.defer`, `workspace:Raycast`, `PivotTo`, physics constraints).
-- **Pre-Delivery Audit:** Check YAGNI, sibling callers, event cleanup, and type safety before concluding.
+- **Safety & Hygiene:** Use `--!strict` / type annotations on new modules, guard clauses, `Disconnect()` connections + `task.cancel()` owned threads on `Destroy()`, avoid per-frame allocations/redundant `.Text` updates, and use modern APIs (`task.wait`, `task.spawn`, `task.defer`, `workspace:Raycast`, `PivotTo`, physics constraints).
+- **Pre-Delivery Audit & Handback:** Check YAGNI, sibling callers, cleanup, and type safety; for new features, report **Runtime Flow**, **Manual Studio Setup**, and **Follow-up Steps**.
 - **Incremental Pre-Flight:** Run `scripts/preflight.ps1` (auto-checks changed `.luau` files via `stylua --check`, `selene`, and `luau-lsp analyze`) instead of scanning the entire `src/` tree.

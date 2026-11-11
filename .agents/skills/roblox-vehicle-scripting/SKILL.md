@@ -43,6 +43,7 @@ Field-tested engineering patterns for Roblox vehicle scripts across **Constraint
   - Calipers steer in yaw only: `hubPose * caliper.relToHub`
   - Wheels/rotors steer and spin: `hubPose * CFrame.Angles(-spinDist / wheelRadius, 0, 0) * spinner.relToHub`
 - **Auto-Create Missing Interface Events**: Guard optional `BindableEvent`/`RemoteEvent` references (e.g. `VirtualInput`, `Sounds`) with `FindFirstChild` + safe creation/noop listener so missing Studio sub-instances never halt the drive loop or spam discarded remote warnings.
+- **Hot-Loop & Lifecycle Hygiene**: Reuse tables/vectors inside `Heartbeat`/`PreSimulation`/`RenderStepped` (no per-frame table/closure allocations or redundant `.Text` updates on HUD labels), cancel stored `task.spawn`/`task.delay` threads (`task.cancel`) on cleanup, and guard `player.Character` with `CharacterAdded` fallback when attaching constraints.
 
 ## 5. Verification Gate
 
