@@ -1,0 +1,23 @@
+# Search / ripgrep / file-discovery exclusions for fast agent & IDE scans
+.scratch/
+scratch/
+backups/
+assets/
+.agents/opencode/
+src/TeslaRoadster_Day1/
+src/TeslaRoadster_Scon/
+globalTypes.d.luau
+sourcemap.json
+clean_*.luau
+debug_*.luau
+step_*.txt
+vsc_step.txt
+kob_*
+*.zip
+*.rar
+*.blend
+*.blend1
+*.fbx
+*.rbxm
+*.rbxl
+*.rbxlx

@@ -1,0 +1,31 @@
+{
+  "files.exclude": {
+    "**/.scratch": true,
+    "**/backups": true,
+    "**/.agents/opencode": true,
+    "**/__pycache__": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.scratch/**": true,
+    "**/scratch/**": true,
+    "**/backups/**": true,
+    "**/assets/**": true,
+    "**/.agents/opencode/**": true,
+    "**/__pycache__/**": true
+  },
+  "search.exclude": {
+    "**/.scratch": true,
+    "**/scratch": true,
+    "**/backups": true,
+    "**/assets": true,
+    "**/.agents/opencode": true,
+    "**/src/TeslaRoadster_Day1": true,
+    "**/src/TeslaRoadster_Scon": true,
+    "**/globalTypes.d.luau": true,
+    "**/sourcemap.json": true,
+    "**/clean_*.luau": true,
+    "**/debug_*.luau": true,
+    "**/kob_*": true
+  }
+}

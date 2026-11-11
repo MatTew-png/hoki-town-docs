@@ -120,26 +120,22 @@ end
 
 task.wait(Tune.LoadDelay)
 
---Remove Existing Mass
-for _, descendant in car:GetDescendants() do
-	if descendant:IsA("BasePart") then
-		descendant.Massless = true
-	end
-end
-
--- Lower collision rebound on the car's own collidable parts while preserving density and grip.
+-- Remove existing mass and lower collision rebound on collidable parts in one pass.
 local COLLISION_ELASTICITY = 0
 local COLLISION_ELASTICITY_WEIGHT = 100
 for _, descendant in car:GetDescendants() do
-	if descendant:IsA("BasePart") and descendant.CanCollide then
-		local properties = descendant.CurrentPhysicalProperties
-		descendant.CustomPhysicalProperties = PhysicalProperties.new(
-			properties.Density,
-			properties.Friction,
-			COLLISION_ELASTICITY,
-			properties.FrictionWeight,
-			COLLISION_ELASTICITY_WEIGHT
-		)
+	if descendant:IsA("BasePart") then
+		descendant.Massless = true
+		if descendant.CanCollide then
+			local properties = descendant.CurrentPhysicalProperties
+			descendant.CustomPhysicalProperties = PhysicalProperties.new(
+				properties.Density,
+				properties.Friction,
+				COLLISION_ELASTICITY,
+				properties.FrictionWeight,
+				COLLISION_ELASTICITY_WEIGHT
+			)
+		end
 	end
 end
 
@@ -866,11 +862,6 @@ ModelWeld(car.Body, car.DriveSeat)
 --Unanchor
 task.wait()
 Unanchor(car)
-for _, d in ipairs(car:GetDescendants()) do
-	if d:IsA("BasePart") then
-		d.Anchored = false
-	end
-end
 car.DriveSeat.Anchored = false
 
 --[[Manage Plugins]]
