@@ -1,0 +1,7 @@
+std = "roblox"
+
+[rules]
+unused_variable = "warn"
+undefined_variable = "deny"
+shadowing = "warn"
+roblox_incorrect_color3_new_bounds = "deny"

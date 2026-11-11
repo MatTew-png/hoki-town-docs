@@ -5,6 +5,64 @@
     "Workspace": {
       "$className": "Workspace",
       "$ignoreUnknownInstances": true,
+      "TeslaRoadster": {
+        "$className": "Model",
+        "$ignoreUnknownInstances": true,
+        "VehicleSystems": {
+          "$path": "src/TeslaRoadster/VehicleSystems.server.luau"
+        },
+        "Hoki-Chassis Tune": {
+          "$path": "src/TeslaRoadster/A-Chassis Tune"
+        },
+        "CarStatusGui": {
+          "$className": "ScreenGui",
+          "$ignoreUnknownInstances": true,
+          "VehicleStatusClient": {
+            "$path": "src/TeslaRoadster/CarStatusGui/VehicleStatusClient.client.luau"
+          }
+        }
+      },
+      "TeslaRoadster_Scon": {
+        "$className": "Model",
+        "$ignoreUnknownInstances": true,
+        "VehicleSystems": {
+          "$path": "src/TeslaRoadster_Scon/VehicleSystems.server.luau"
+        },
+        "Sounds": {
+          "$className": "UnreliableRemoteEvent",
+          "$ignoreUnknownInstances": true,
+          "Server": {
+            "$path": "src/TeslaRoadster_Scon/Sounds.server.luau"
+          }
+        },
+        "Hoki-Chassis Tune": {
+          "$path": "src/TeslaRoadster_Scon/A-Chassis Tune"
+        },
+        "CarStatusGui": {
+          "$className": "ScreenGui",
+          "$ignoreUnknownInstances": true,
+          "VehicleStatusClient": {
+            "$path": "src/TeslaRoadster_Scon/CarStatusGui/VehicleStatusClient.client.luau"
+          }
+        }
+      },
+      "TeslaRoadster_Best": {
+        "$className": "Model",
+        "$ignoreUnknownInstances": true,
+        "VehicleSystems": {
+          "$path": "src/TeslaRoadster/VehicleSystems.server.luau"
+        },
+        "Hoki-Chassis Tune": {
+          "$path": "src/TeslaRoadster/A-Chassis Tune"
+        },
+        "CarStatusGui": {
+          "$className": "ScreenGui",
+          "$ignoreUnknownInstances": true,
+          "VehicleStatusClient": {
+            "$path": "src/TeslaRoadster/CarStatusGui/VehicleStatusClient.client.luau"
+          }
+        }
+      },
       "TeslaRoadster_HokiChassis": {
         "$className": "Model",
         "$ignoreUnknownInstances": true,
@@ -46,13 +104,49 @@
           "$path": "src/TeslaRoadster_Raycast/RaycastChassisServer.server.luau"
         },
         "RaycastChassisClient": {
-          "$path": "src/TeslaRoadster_Raycast/RaycastChassisClient.client.luau"
+          "$path": "src/TeslaRoadster_Raycast/RaycastChassisClient.server.luau"
         },
         "RaycastVehiclePhysics": {
           "$path": "src/TeslaRoadster_Raycast/RaycastVehiclePhysics.luau"
         },
         "VehicleColorClient": {
-          "$path": "src/TeslaRoadster_Raycast/VehicleColorClient.client.luau"
+          "$path": "src/TeslaRoadster_Raycast/VehicleColorClient.server.luau"
+        },
+        "VehicleSoundClient": {
+          "$path": "src/TeslaRoadster_Raycast/VehicleSoundClient.server.luau"
+        },
+        "CarStatusGui": {
+          "$className": "ScreenGui",
+          "$ignoreUnknownInstances": true,
+          "VehicleStatusClient": {
+            "$path": "src/TeslaRoadster_Raycast/VehicleStatusClient.client.luau"
+          }
+        }
+      },
+      "Tesla_Roadster_Raycast_Master_2026": {
+        "$className": "Model",
+        "$ignoreUnknownInstances": true,
+        "RaycastChassisServer": {
+          "$path": "src/TeslaRoadster_Raycast/RaycastChassisServer.server.luau"
+        },
+        "RaycastChassisClient": {
+          "$path": "src/TeslaRoadster_Raycast/RaycastChassisClient.server.luau"
+        },
+        "RaycastVehiclePhysics": {
+          "$path": "src/TeslaRoadster_Raycast/RaycastVehiclePhysics.luau"
+        },
+        "VehicleColorClient": {
+          "$path": "src/TeslaRoadster_Raycast/VehicleColorClient.server.luau"
+        },
+        "VehicleSoundClient": {
+          "$path": "src/TeslaRoadster_Raycast/VehicleSoundClient.server.luau"
+        },
+        "CarStatusGui": {
+          "$className": "ScreenGui",
+          "$ignoreUnknownInstances": true,
+          "VehicleStatusClient": {
+            "$path": "src/TeslaRoadster_Raycast/VehicleStatusClient.client.luau"
+          }
         }
       }
     },
@@ -79,6 +173,9 @@
       "$ignoreUnknownInstances": true,
       "VehicleColorService": {
         "$path": "src/ReplicatedStorage/VehicleColorService.luau"
+      },
+      "VehicleStats": {
+        "$path": "src/ReplicatedStorage/VehicleStats.luau"
       }
     },
     "ServerStorage": {
@@ -94,13 +191,23 @@
             "$path": "src/TeslaRoadster_Raycast/RaycastChassisServer.server.luau"
           },
           "RaycastChassisClient": {
-            "$path": "src/TeslaRoadster_Raycast/RaycastChassisClient.client.luau"
+            "$path": "src/TeslaRoadster_Raycast/RaycastChassisClient.server.luau"
           },
           "RaycastVehiclePhysics": {
             "$path": "src/TeslaRoadster_Raycast/RaycastVehiclePhysics.luau"
           },
           "VehicleColorClient": {
-            "$path": "src/TeslaRoadster_Raycast/VehicleColorClient.client.luau"
+            "$path": "src/TeslaRoadster_Raycast/VehicleColorClient.server.luau"
+          },
+          "VehicleSoundClient": {
+            "$path": "src/TeslaRoadster_Raycast/VehicleSoundClient.server.luau"
+          },
+          "CarStatusGui": {
+            "$className": "ScreenGui",
+            "$ignoreUnknownInstances": true,
+            "VehicleStatusClient": {
+              "$path": "src/TeslaRoadster_Raycast/VehicleStatusClient.client.luau"
+            }
           }
         },
         "TeslaRoadster_NGChassis": {

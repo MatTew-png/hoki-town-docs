@@ -7,11 +7,15 @@ local gui = script.Parent
 local vehicleReference = gui:WaitForChild("VehicleRef", 10)
 local car = vehicleReference and vehicleReference.Value
 while not car do
-	if not vehicleReference then break end
+	if not vehicleReference then
+		break
+	end
 	vehicleReference:GetPropertyChangedSignal("Value"):Wait()
 	car = vehicleReference.Value
 end
-if not car then return end
+if not car then
+	return
+end
 
 local repairRemote = car:WaitForChild("VehicleRepairRequest", 5) :: RemoteEvent?
 
@@ -27,7 +31,8 @@ if not alertBanner then
 	alertBanner.TextColor3 = Color3.fromRGB(255, 255, 255)
 	alertBanner.Font = Enum.Font.GothamBold
 	alertBanner.TextSize = 16
-	alertBanner.Text = "💥 รถพังเสียหายหนัก (0% HP) — กด [R] เพื่อซ่อมรถทันที"
+	alertBanner.Text =
+		"💥 รถพังเสียหายหนัก (0% HP) — กด [R] เพื่อซ่อมรถทันที"
 	alertBanner.Visible = false
 	alertBanner.Parent = gui
 
@@ -44,7 +49,9 @@ end
 
 -- Keyboard Shortcut [R] to Quick-Repair
 UserInputService.InputBegan:Connect(function(input, gpe)
-	if gpe or UserInputService:GetFocusedTextBox() then return end
+	if gpe or UserInputService:GetFocusedTextBox() then
+		return
+	end
 	if input.KeyCode == Enum.KeyCode.R then
 		if repairRemote then
 			repairRemote:FireServer()
@@ -71,7 +78,7 @@ local function readGear()
 		return math.floor(gearValue.Value + 0.5)
 	end
 
-	local tune = car:FindFirstChild("A-Chassis Tune")
+	local tune = car:FindFirstChild("Hoki-Chassis Tune") or car:FindFirstChild("A-Chassis Tune")
 	local vehicleInterface = tune and tune:FindFirstChild("A-Chassis Interface")
 	local vehicleValues = vehicleInterface and vehicleInterface:FindFirstChild("Values")
 	gearValue = vehicleValues and vehicleValues:FindFirstChild("Gear")

@@ -19,17 +19,47 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local car = script.Parent :: Model
-local seat = car:WaitForChild("DriveSeat") :: VehicleSeat
+local seat = car:WaitForChild("DriveSeat", 5) :: VehicleSeat?
+if not seat then
+	warn("[VehicleSystems] Aborting: No DriveSeat found in " .. car:GetFullName())
+	return
+end
 local passengerSeat = car:FindFirstChild("PassengerSeat") :: Seat?
 local bodyModel = (car:FindFirstChild("Body") or car) :: Instance
 local wheelsModel = (car:FindFirstChild("Wheels") or car) :: Instance
-local guiTemplate = car:WaitForChild("CarStatusGui") :: ScreenGui
+local guiTemplate = car:WaitForChild("CarStatusGui", 5) :: ScreenGui?
+if not guiTemplate then
+	warn("[VehicleSystems] Aborting: No CarStatusGui found in " .. car:GetFullName())
+	return
+end
 
 -- Ensure seats never auto-sit on touch; entry is strictly controlled
 seat.CanTouch = false
 if passengerSeat then
 	passengerSeat.CanTouch = false
 	passengerSeat.Anchored = false
+end
+
+-- Low-slung supercar cabin posture calibration (keeps driver head safely under glass roof)
+-- Shift vertically in seat space so Roblox's sitting rotation on SeatWeld.C0 is preserved.
+local function applyCabinSeatOffset(targetSeat: Seat | VehicleSeat)
+	targetSeat.ChildAdded:Connect(function(child: Instance)
+		if child:IsA("Weld") and child.Name == "SeatWeld" then
+			local weld = child :: Weld
+			task.defer(function()
+				if weld.Parent ~= targetSeat or weld:GetAttribute("HokiOffsetApplied") then
+					return
+				end
+				weld:SetAttribute("HokiOffsetApplied", true)
+				weld.C0 = CFrame.new(0, -0.64, -0.10) * CFrame.Angles(math.rad(26), 0, 0) * weld.C0
+			end)
+		end
+	end)
+end
+
+applyCabinSeatOffset(seat)
+if passengerSeat then
+	applyCabinSeatOffset(passengerSeat)
 end
 
 -- ============================================================================
@@ -139,7 +169,7 @@ end
 -- 2. ATTRIBUTES & DEFAULT VALUES
 -- ============================================================================
 local MAX_HEALTH = 100
-local MAX_FUEL   = 100
+local MAX_FUEL = 100
 
 local DEFAULT_ATTRIBUTES: { [string]: any } = {
 	MaxHealth = MAX_HEALTH,
@@ -160,11 +190,16 @@ local DEFAULT_ATTRIBUTES: { [string]: any } = {
 	UnderglowColor = Color3.fromRGB(0, 220, 255),
 	BodyColor = Color3.fromRGB(215, 30, 45),
 	RimColor = Color3.fromRGB(175, 175, 180),
-	ImpactSpeed1 = 12, ImpactDamage1 = 2,
-	ImpactSpeed2 = 25, ImpactDamage2 = 5,
-	ImpactSpeed3 = 40, ImpactDamage3 = 12,
-	ImpactSpeed4 = 60, ImpactDamage4 = 22,
-	ImpactSpeed5 = 85, ImpactDamage5 = 35,
+	ImpactSpeed1 = 12,
+	ImpactDamage1 = 2,
+	ImpactSpeed2 = 25,
+	ImpactDamage2 = 5,
+	ImpactSpeed3 = 40,
+	ImpactDamage3 = 12,
+	ImpactSpeed4 = 60,
+	ImpactDamage4 = 22,
+	ImpactSpeed5 = 85,
+	ImpactDamage5 = 35,
 	FuelDrainStartSpeed = 4,
 	FuelDrainBasePerSecond = 0.01,
 	FuelDrainPerStudPerSecond = 0.0002,
@@ -185,11 +220,14 @@ if not drivePrompt then
 	drivePrompt.Name = "DrivePrompt"
 	drivePrompt.ObjectText = "Tesla Roadster"
 	drivePrompt.ActionText = "ขับรถ (Drive)"
-	drivePrompt.KeyboardKeyCode = Enum.KeyCode.E
+	drivePrompt.KeyboardKeyCode = Enum.KeyCode.F
 	drivePrompt.HoldDuration = 0
 	drivePrompt.MaxActivationDistance = 12
 	drivePrompt.RequiresLineOfSight = false
 	drivePrompt.Parent = seat
+else
+	drivePrompt.KeyboardKeyCode = Enum.KeyCode.F
+	drivePrompt.ActionText = "ขับรถ (Drive)"
 end
 
 drivePrompt.Triggered:Connect(function(player: Player)
@@ -204,7 +242,9 @@ local function ejectOccupantToSide(player: Player, targetSeat: Seat | VehicleSea
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not hum or not hrp then return end
+	if not hum or not hrp then
+		return
+	end
 
 	-- Unseat safely
 	hum.Sit = false
@@ -225,7 +265,9 @@ end
 exitRemote.OnServerEvent:Connect(function(player: Player)
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not hum then return end
+	if not hum then
+		return
+	end
 
 	if seat.Occupant == hum then
 		ejectOccupantToSide(player, seat, true)
@@ -243,7 +285,9 @@ local rearLightMesh = (lightsFolder and lightsFolder:FindFirstChild("Plane.007")
 local brakePointLight = rearLightMesh and rearLightMesh:FindFirstChild("HokiBrakeGlow") :: PointLight?
 
 tuningRemote.OnServerEvent:Connect(function(player: Player, targetCar: Instance?, action: string, payload: any)
-	if targetCar ~= car or not payload then return end
+	if targetCar ~= car or not payload then
+		return
+	end
 
 	if action == "VFXState" then
 		-- Sync brake lights across all observing clients
@@ -269,7 +313,7 @@ tuningRemote.OnServerEvent:Connect(function(player: Player, targetCar: Instance?
 		end
 
 		-- Sync tire smoke across wheels
-		for _, wName in ipairs({"FL", "FR", "RL", "RR"}) do
+		for _, wName in ipairs({ "FL", "FR", "RL", "RR" }) do
 			local wheel = wheelsModel:FindFirstChild(wName)
 			if wheel then
 				local isRear = (wName == "RL" or wName == "RR")
@@ -283,17 +327,16 @@ tuningRemote.OnServerEvent:Connect(function(player: Player, targetCar: Instance?
 				end
 			end
 		end
-
 	elseif action == "SetAttribute" and typeof(payload) == "table" then
 		for k, v in pairs(payload) do
 			car:SetAttribute(k, v)
 		end
-
 	elseif action == "Customization" and typeof(payload) == "table" then
 		-- Slot 1: Body Paint
 		if typeof(payload.BodyColor) == "Color3" then
 			car:SetAttribute("BodyColor", payload.BodyColor)
-			local paintPart = (teeraMesh and teeraMesh:FindFirstChild("Paint")) or bodyModel:FindFirstChild("Body_Primary_Paint", true)
+			local paintPart = (teeraMesh and teeraMesh:FindFirstChild("Paint"))
+				or bodyModel:FindFirstChild("Body_Primary_Paint", true)
 			if paintPart and paintPart:IsA("BasePart") then
 				paintPart.Color = payload.BodyColor
 			end
@@ -302,7 +345,10 @@ tuningRemote.OnServerEvent:Connect(function(player: Player, targetCar: Instance?
 		if typeof(payload.RimColor) == "Color3" then
 			car:SetAttribute("RimColor", payload.RimColor)
 			for _, desc in ipairs(wheelsModel:GetDescendants()) do
-				if desc:IsA("BasePart") and (desc.Name == "Plane.006" or desc.Name == "Rim" or desc.Material == Enum.Material.Metal) then
+				if
+					desc:IsA("BasePart")
+					and (desc.Name == "Plane.006" or desc.Name == "Rim" or desc.Material == Enum.Material.Metal)
+				then
 					desc.Color = payload.RimColor
 				end
 			end
@@ -333,7 +379,9 @@ end
 repairRemote.OnServerEvent:Connect(function(player: Player)
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not hrp then return end
+	if not hrp then
+		return
+	end
 
 	-- Allow repair if player is seated or standing within 18 studs of car
 	local dist = (hrp.Position - seat.Position).Magnitude
@@ -355,13 +403,19 @@ end)
 local lastPedImpact = 0
 local function handlePedestrianHit(humanoid: Humanoid, hitPart: BasePart)
 	local char = humanoid.Parent
-	if not char or char == (seat.Occupant and seat.Occupant.Parent) then return end
+	if not char or char == (seat.Occupant and seat.Occupant.Parent) then
+		return
+	end
 
 	local now = os.clock()
-	if now - lastPedImpact < 0.35 then return end
+	if now - lastPedImpact < 0.35 then
+		return
+	end
 
 	local speed = lastVehicleVelocity.Magnitude
-	if speed < 15 then return end -- Filter gentle parking bumps
+	if speed < 15 then
+		return
+	end -- Filter gentle parking bumps
 
 	lastPedImpact = now
 	local damage = math.clamp(speed * 1.45, 10, 100)
@@ -385,16 +439,25 @@ local function getImpactDamage(speed: number): number
 	for i = 1, 5 do
 		table.insert(tiers, {
 			speed = tonumber(car:GetAttribute("ImpactSpeed" .. i)) or DEFAULT_ATTRIBUTES["ImpactSpeed" .. i],
-			damage = math.max(0, tonumber(car:GetAttribute("ImpactDamage" .. i)) or DEFAULT_ATTRIBUTES["ImpactDamage" .. i]),
+			damage = math.max(
+				0,
+				tonumber(car:GetAttribute("ImpactDamage" .. i)) or DEFAULT_ATTRIBUTES["ImpactDamage" .. i]
+			),
 		})
 	end
-	table.sort(tiers, function(a, b) return a.speed < b.speed end)
-	if speed < tiers[1].speed then return 0 end
+	table.sort(tiers, function(a, b)
+		return a.speed < b.speed
+	end)
+	if speed < tiers[1].speed then
+		return 0
+	end
 	for i = 2, #tiers do
 		local lower, upper = tiers[i - 1], tiers[i]
 		if speed <= upper.speed then
 			local span = upper.speed - lower.speed
-			if span <= 0 then return upper.damage end
+			if span <= 0 then
+				return upper.damage
+			end
 			local alpha = math.clamp((speed - lower.speed) / span, 0, 1)
 			return lower.damage + (upper.damage - lower.damage) * alpha
 		end
@@ -403,7 +466,9 @@ local function getImpactDamage(speed: number): number
 end
 
 local function processImpact(sourcePart: BasePart, otherPart: BasePart)
-	if otherPart:IsDescendantOf(car) or not otherPart.CanCollide then return end
+	if otherPart:IsDescendantOf(car) or not otherPart.CanCollide then
+		return
+	end
 
 	-- Check for Pedestrian Hit
 	local otherModel = otherPart:FindFirstAncestorOfClass("Model")
@@ -414,20 +479,30 @@ local function processImpact(sourcePart: BasePart, otherPart: BasePart)
 	end
 
 	local now = os.clock()
-	if now - lastImpactTime < 0.65 then return end
+	if now - lastImpactTime < 0.65 then
+		return
+	end
 
 	local relVel = lastVehicleVelocity - otherPart.AssemblyLinearVelocity
 	local carLook = seat.CFrame.LookVector
 	local sensorDir = sourcePart.Name == "Rear" and -carLook or carLook
 	local horizDir = Vector3.new(sensorDir.X, 0, sensorDir.Z)
-	if horizDir.Magnitude < 0.1 then return end
+	if horizDir.Magnitude < 0.1 then
+		return
+	end
 	local closingSpeed = relVel:Dot(horizDir.Unit)
 
-	if closingSpeed < 12 then return end
-	if car:GetAttribute("GodMode") == true then return end
+	if closingSpeed < 12 then
+		return
+	end
+	if car:GetAttribute("GodMode") == true then
+		return
+	end
 
 	local damage = getImpactDamage(closingSpeed)
-	if damage <= 0 then return end
+	if damage <= 0 then
+		return
+	end
 
 	lastImpactTime = now
 	local currentHealth = tonumber(car:GetAttribute("Health")) or MAX_HEALTH
@@ -504,48 +579,62 @@ local currentPlayer: Player? = nil
 local function updateOccupant()
 	local hum = seat.Occupant
 	local newPlayer = hum and Players:GetPlayerFromCharacter(hum.Parent) or nil
-	if currentPlayer == newPlayer then return end
 
-	if currentPlayer then
-		local pg = currentPlayer:FindFirstChildOfClass("PlayerGui")
-		if pg then
-			local existing = pg:FindFirstChild(car.Name .. "StatusGui")
-			if existing then existing:Destroy() end
-		end
-	end
-
-	currentPlayer = newPlayer
-	if not newPlayer then
+	if not hum then
+		seat.Anchored = false
 		drivePrompt.Enabled = true
-		task.delay(0.15, function()
-			if not seat.Occupant then
-				seat.AssemblyLinearVelocity = Vector3.zero
-				seat.AssemblyAngularVelocity = Vector3.zero
-				seat.Anchored = true
+		if currentPlayer then
+			local pg = currentPlayer:FindFirstChildOfClass("PlayerGui")
+			if pg then
+				local existing = pg:FindFirstChild(car.Name .. "StatusGui")
+				if existing then
+					existing:Destroy()
+				end
 			end
-		end)
+			currentPlayer = nil
+		end
 		return
 	end
 
 	seat.Anchored = false
 	drivePrompt.Enabled = false
 
-	task.spawn(function()
-		local pg = newPlayer:WaitForChild("PlayerGui", 10)
-		if not pg or currentPlayer ~= newPlayer or not car.Parent then return end
+	if currentPlayer == newPlayer then
+		return
+	end
 
-		local screen = guiTemplate:Clone()
-		screen.Name = car.Name .. "StatusGui"
-		screen.Enabled = true
-		screen.ResetOnSpawn = false
+	if currentPlayer then
+		local pg = currentPlayer:FindFirstChildOfClass("PlayerGui")
+		if pg then
+			local existing = pg:FindFirstChild(car.Name .. "StatusGui")
+			if existing then
+				existing:Destroy()
+			end
+		end
+	end
 
-		local ref = Instance.new("ObjectValue")
-		ref.Name = "VehicleRef"
-		ref.Value = car
-		ref.Parent = screen
+	currentPlayer = newPlayer
 
-		screen.Parent = pg
-	end)
+	if newPlayer then
+		task.spawn(function()
+			local pg = newPlayer:WaitForChild("PlayerGui", 10)
+			if not pg or currentPlayer ~= newPlayer or not car.Parent then
+				return
+			end
+
+			local screen = guiTemplate:Clone()
+			screen.Name = car.Name .. "StatusGui"
+			screen.Enabled = true
+			screen.ResetOnSpawn = false
+
+			local ref = Instance.new("ObjectValue")
+			ref.Name = "VehicleRef"
+			ref.Value = car
+			ref.Parent = screen
+
+			screen.Parent = pg
+		end)
+	end
 end
 
 seat:GetPropertyChangedSignal("Occupant"):Connect(updateOccupant)
@@ -556,12 +645,5 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 updateOccupant()
 
--- Startup parking stabilization: settle onto road, then anchor
-task.delay(2.0, function()
-	if not seat.Occupant then
-		seat.AssemblyLinearVelocity = Vector3.zero
-		seat.AssemblyAngularVelocity = Vector3.zero
-		seat.Anchored = true
-	end
-end)
-
+-- Ensure seat remains unanchored for physics simulation
+seat.Anchored = false
