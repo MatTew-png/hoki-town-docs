@@ -40,19 +40,51 @@ if passengerSeat then
 	passengerSeat.Anchored = false
 end
 
--- Low-slung supercar cabin posture calibration (keeps driver head safely under glass roof)
--- Shift vertically in seat space so Roblox's sitting rotation on SeatWeld.C0 is preserved.
+-- Low-slung supercar cabin posture presets (switchable live in-car via [C] or HUD button)
+local POSE_OFFSETS: { [number]: CFrame } = {
+	[1] = CFrame.new(0.06, -0.70, 0.22) * CFrame.Angles(math.rad(10), 0, 0), -- Sport
+	[2] = CFrame.new(0.06, -0.74, 0.26) * CFrame.Angles(math.rad(14), 0, 0), -- Chill
+	[3] = CFrame.new(0.06, -0.82, 0.20) * CFrame.Angles(math.rad(18), 0, 0), -- Lowrider
+	[4] = CFrame.new(0.06, -0.60, 0.14) * CFrame.Angles(math.rad(2), 0, 0), -- Upright
+}
+
+local baseSeatWeldC0: { [Weld]: CFrame } = {}
+
+local function applyPoseOffsetToWeld(weld: Weld, poseIndex: number)
+	local base = baseSeatWeldC0[weld]
+	if not base then
+		base = weld.C0
+		baseSeatWeldC0[weld] = base
+	end
+	local idx = math.clamp(math.floor(poseIndex + 0.5), 1, #POSE_OFFSETS)
+	weld.C0 = POSE_OFFSETS[idx] * base
+end
+
 local function applyCabinSeatOffset(targetSeat: Seat | VehicleSeat)
 	targetSeat.ChildAdded:Connect(function(child: Instance)
 		if child:IsA("Weld") and child.Name == "SeatWeld" then
 			local weld = child :: Weld
 			task.defer(function()
-				if weld.Parent ~= targetSeat or weld:GetAttribute("HokiOffsetApplied") then
+				if weld.Parent ~= targetSeat or baseSeatWeldC0[weld] then
 					return
 				end
-				weld:SetAttribute("HokiOffsetApplied", true)
-				weld.C0 = CFrame.new(0, -0.64, -0.10) * CFrame.Angles(math.rad(26), 0, 0) * weld.C0
+				baseSeatWeldC0[weld] = weld.C0
+				local char = weld.Part1 and weld.Part1.Parent
+				local plr = char and Players:GetPlayerFromCharacter(char)
+				local preferred = (plr and tonumber(plr:GetAttribute("SconPreferredPose")))
+					or tonumber(car:GetAttribute("SconDriverPose"))
+					or 1
+				local idx = math.clamp(math.floor(preferred + 0.5), 1, #POSE_OFFSETS)
+				if targetSeat == seat then
+					car:SetAttribute("SconDriverPose", idx)
+				end
+				applyPoseOffsetToWeld(weld, idx)
 			end)
+		end
+	end)
+	targetSeat.ChildRemoved:Connect(function(child: Instance)
+		if child:IsA("Weld") and baseSeatWeldC0[child] then
+			baseSeatWeldC0[child] = nil
 		end
 	end)
 end
@@ -61,6 +93,14 @@ applyCabinSeatOffset(seat)
 if passengerSeat then
 	applyCabinSeatOffset(passengerSeat)
 end
+
+car:GetAttributeChangedSignal("SconDriverPose"):Connect(function()
+	local weld = seat:FindFirstChild("SeatWeld")
+	if weld and weld:IsA("Weld") then
+		local idx = tonumber(car:GetAttribute("SconDriverPose")) or 1
+		applyPoseOffsetToWeld(weld, idx)
+	end
+end)
 
 -- ============================================================================
 -- 1. AUTO-CREATE REQUIRED REMOTES & ENGINE BAY VFX
@@ -77,6 +117,16 @@ if not exitRemote then
 	exitRemote = Instance.new("RemoteEvent")
 	exitRemote.Name = "VehicleExitRequest"
 	exitRemote.Parent = car
+end
+
+local existingPoseRemote = car:FindFirstChild("VehiclePoseRequest")
+local poseRemote: RemoteEvent
+if existingPoseRemote and existingPoseRemote:IsA("RemoteEvent") then
+	poseRemote = existingPoseRemote
+else
+	poseRemote = Instance.new("RemoteEvent")
+	poseRemote.Name = "VehiclePoseRequest"
+	poseRemote.Parent = car
 end
 
 local tuningRemote = ReplicatedStorage:FindFirstChild("HokiVehicleTuningRemote") :: RemoteEvent?
@@ -419,6 +469,24 @@ exitRemote.OnServerEvent:Connect(function(player: Player)
 		ejectOccupantToSide(player, seat, true)
 	elseif passengerSeat and passengerSeat.Occupant == hum then
 		ejectOccupantToSide(player, passengerSeat, false)
+	end
+end)
+
+poseRemote.OnServerEvent:Connect(function(player: Player, requestedIndex: any)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hum or seat.Occupant ~= hum then
+		return
+	end
+	local current = tonumber(car:GetAttribute("SconDriverPose")) or 1
+	local nextIndex = if typeof(requestedIndex) == "number"
+		then math.clamp(math.floor(requestedIndex + 0.5), 1, #POSE_OFFSETS)
+		else ((current % #POSE_OFFSETS) + 1)
+	player:SetAttribute("SconPreferredPose", nextIndex)
+	car:SetAttribute("SconDriverPose", nextIndex)
+	local weld = seat:FindFirstChild("SeatWeld")
+	if weld and weld:IsA("Weld") then
+		applyPoseOffsetToWeld(weld, nextIndex)
 	end
 end)
 

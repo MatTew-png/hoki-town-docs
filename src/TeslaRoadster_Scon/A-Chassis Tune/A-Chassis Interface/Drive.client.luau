@@ -45,6 +45,7 @@ local _Tune = tuneFolder and require(tuneFolder)
 local Units = tuneFolder and tuneFolder:FindFirstChild("README") and require(tuneFolder.README.Units)
 local SpiderFlightEngine = require(script.Parent:WaitForChild("SpiderFlightEngine"))
 local StuntCamera = require(script.Parent:WaitForChild("StuntCamera"))
+local DriverPoseController = require(script.Parent:WaitForChild("DriverPoseController"))
 print(">>> [DRIVE CLIENT ACTIVE] Drive.client.luau initialized for car: " .. tostring(car))
 
 -- ============================================================================
@@ -323,6 +324,7 @@ local _CSAmt = 0
 local _MidAirActive = false
 local stunt: any = nil
 local stuntCam: any = nil
+local driverPose: any = nil
 local _FrontGroundedCount = 2
 local _RearGroundedCount = 2
 local _WheelGrounded = { FL = true, FR = true, RL = true, RR = true }
@@ -693,6 +695,10 @@ local function unbindDriverControls()
 	if stuntCam then
 		stuntCam:Destroy()
 		stuntCam = nil
+	end
+	if driverPose then
+		driverPose:Destroy()
+		driverPose = nil
 	end
 end
 
@@ -2648,6 +2654,7 @@ stunt = SpiderFlightEngine.new({
 	getSteerInput = getEffectiveSeatSteer,
 })
 stuntCam = StuntCamera.new(car, driveSeat, _Tune, Units)
+driverPose = DriverPoseController.new(car, driveSeat)
 
 local function ArcadeSteeringYaw(dt: number)
 	stunt:StepSurfaceSteering(dt, _GSteerC)

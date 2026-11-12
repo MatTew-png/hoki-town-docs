@@ -18,13 +18,68 @@ if not car then
 end
 
 local repairRemote = car:WaitForChild("VehicleRepairRequest", 5) :: RemoteEvent?
+local poseRemote = car:WaitForChild("VehiclePoseRequest", 5) :: RemoteEvent?
+local seat = car:WaitForChild("DriveSeat") :: VehicleSeat
+
+local POSE_LABELS: { string } = {
+	"Sport (จับพวงมาลัย)",
+	"Chill (ขับมือเดียว)",
+	"Lowrider (เอนซิ่ง)",
+	"Upright (นั่งตรงสตั๊นท์)",
+}
+
+-- Compact Pose Switcher Pill (bottom-left, non-intrusive)
+local poseButton = gui:FindFirstChild("PoseSwitchButton") :: TextButton?
+if not poseButton then
+	poseButton = Instance.new("TextButton")
+	poseButton.Name = "PoseSwitchButton"
+	poseButton.Size = UDim2.fromOffset(224, 34)
+	poseButton.Position = UDim2.new(0, 20, 1, -54)
+	poseButton.BackgroundColor3 = Color3.fromRGB(16, 20, 28)
+	poseButton.BackgroundTransparency = 0.18
+	poseButton.TextColor3 = Color3.fromRGB(235, 244, 255)
+	poseButton.Font = Enum.Font.GothamBold
+	poseButton.TextSize = 13
+	poseButton.AutoButtonColor = true
+	poseButton.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = poseButton
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(110, 185, 255)
+	stroke.Thickness = 1.2
+	stroke.Transparency = 0.45
+	stroke.Parent = poseButton
+end
+
+local function refreshPoseLabel()
+	if not poseButton then
+		return
+	end
+	local rawIdx = tonumber(car:GetAttribute("SconDriverPose")) or 1
+	local idx = math.clamp(math.floor(rawIdx + 0.5), 1, #POSE_LABELS)
+	local label = POSE_LABELS[idx] or POSE_LABELS[1]
+	poseButton.Text = string.format("[C] ท่านั่ง: %s (%d/%d)", label, idx, #POSE_LABELS)
+end
+
+local function cyclePose()
+	if poseRemote then
+		poseRemote:FireServer()
+	end
+end
+
+poseButton.MouseButton1Click:Connect(cyclePose)
+car:GetAttributeChangedSignal("SconDriverPose"):Connect(refreshPoseLabel)
+refreshPoseLabel()
 
 -- Create Alert Banner on HUD
 local alertBanner = gui:FindFirstChild("BreakdownAlertBanner")
 if not alertBanner then
 	alertBanner = Instance.new("TextLabel")
 	alertBanner.Name = "BreakdownAlertBanner"
-	alertBanner.Size = UDim2.new(0, 480, 0, 42)
+	alertBanner.Size = UDim2.fromOffset(480, 42)
 	alertBanner.Position = UDim2.new(0.5, -240, 0, 24)
 	alertBanner.BackgroundColor3 = Color3.fromRGB(220, 35, 35)
 	alertBanner.BackgroundTransparency = 0.15
@@ -47,7 +102,7 @@ if not alertBanner then
 	bStroke.Parent = alertBanner
 end
 
--- Keyboard Shortcut [R] to Quick-Repair
+-- Keyboard Shortcut [R] to Quick-Repair & [C] to Cycle Driving Pose
 UserInputService.InputBegan:Connect(function(input, gpe)
 	if gpe or UserInputService:GetFocusedTextBox() then
 		return
@@ -56,6 +111,8 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 		if repairRemote then
 			repairRemote:FireServer()
 		end
+	elseif input.KeyCode == Enum.KeyCode.C then
+		cyclePose()
 	end
 end)
 
@@ -67,7 +124,6 @@ local speedLabel = background:WaitForChild("SpeedNow")
 local gearNow = background:WaitForChild("GearNow")
 local gearNext = background:WaitForChild("GearNext")
 local gearBefore = background:WaitForChild("GearBefore")
-local seat = car:WaitForChild("DriveSeat")
 
 local function readGear()
 	local playerGui = localPlayer:FindFirstChildOfClass("PlayerGui")
