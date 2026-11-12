@@ -73,7 +73,7 @@ local function applyCabinSeatOffset(targetSeat: Seat | VehicleSeat)
 				local plr = char and Players:GetPlayerFromCharacter(char)
 				local preferred = (plr and tonumber(plr:GetAttribute("SconPreferredPose")))
 					or tonumber(car:GetAttribute("SconDriverPose"))
-					or 1
+					or 3
 				local idx = math.clamp(math.floor(preferred + 0.5), 1, #POSE_OFFSETS)
 				if targetSeat == seat then
 					car:SetAttribute("SconDriverPose", idx)
@@ -97,7 +97,7 @@ end
 car:GetAttributeChangedSignal("SconDriverPose"):Connect(function()
 	local weld = seat:FindFirstChild("SeatWeld")
 	if weld and weld:IsA("Weld") then
-		local idx = tonumber(car:GetAttribute("SconDriverPose")) or 1
+		local idx = tonumber(car:GetAttribute("SconDriverPose")) or 3
 		applyPoseOffsetToWeld(weld, idx)
 	end
 end)
@@ -478,7 +478,7 @@ poseRemote.OnServerEvent:Connect(function(player: Player, requestedIndex: any)
 	if not hum or seat.Occupant ~= hum then
 		return
 	end
-	local current = tonumber(car:GetAttribute("SconDriverPose")) or 1
+	local current = tonumber(car:GetAttribute("SconDriverPose")) or 3
 	local nextIndex = if typeof(requestedIndex) == "number"
 		then math.clamp(math.floor(requestedIndex + 0.5), 1, #POSE_OFFSETS)
 		else ((current % #POSE_OFFSETS) + 1)

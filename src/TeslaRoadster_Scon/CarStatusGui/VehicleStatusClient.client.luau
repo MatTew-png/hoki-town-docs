@@ -58,7 +58,7 @@ local function refreshPoseLabel()
 	if not poseButton then
 		return
 	end
-	local rawIdx = tonumber(car:GetAttribute("SconDriverPose")) or 1
+	local rawIdx = tonumber(car:GetAttribute("SconDriverPose")) or 3
 	local idx = math.clamp(math.floor(rawIdx + 0.5), 1, #POSE_LABELS)
 	local label = POSE_LABELS[idx] or POSE_LABELS[1]
 	poseButton.Text = string.format("[C] ท่านั่ง: %s (%d/%d)", label, idx, #POSE_LABELS)

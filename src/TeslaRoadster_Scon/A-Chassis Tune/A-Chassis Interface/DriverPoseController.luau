@@ -20,6 +20,10 @@ export type PosePreset = {
 	lElbow: { pitch: number, yaw: number, roll: number },
 	rShoulder: { pitch: number, yaw: number, roll: number },
 	rElbow: { pitch: number, yaw: number, roll: number },
+	hipPitchDeg: number,
+	hipSpreadDeg: number,
+	kneePitchDeg: number,
+	anklePitchDeg: number,
 	steerHandScale: number,
 	steerLeftFactor: number,
 	steerRightFactor: number,
@@ -50,6 +54,10 @@ DriverPoseController.Presets = {
 		lElbow = { pitch = 68, yaw = 0, roll = 0 },
 		rShoulder = { pitch = 30, yaw = 8, roll = -8 },
 		rElbow = { pitch = 68, yaw = 0, roll = 0 },
+		hipPitchDeg = 80,
+		hipSpreadDeg = 2,
+		kneePitchDeg = -18,
+		anklePitchDeg = 18,
 		steerHandScale = 12,
 		steerLeftFactor = 1,
 		steerRightFactor = 1,
@@ -64,6 +72,10 @@ DriverPoseController.Presets = {
 		lElbow = { pitch = 64, yaw = 0, roll = 0 },
 		rShoulder = { pitch = 12, yaw = 14, roll = -12 },
 		rElbow = { pitch = 52, yaw = -8, roll = 14 },
+		hipPitchDeg = 80,
+		hipSpreadDeg = 3,
+		kneePitchDeg = -12,
+		anklePitchDeg = 18,
 		steerHandScale = 14,
 		steerLeftFactor = 1,
 		steerRightFactor = 0,
@@ -78,6 +90,10 @@ DriverPoseController.Presets = {
 		lElbow = { pitch = 56, yaw = 0, roll = 0 },
 		rShoulder = { pitch = 44, yaw = 7, roll = -8 },
 		rElbow = { pitch = 56, yaw = 0, roll = 0 },
+		hipPitchDeg = 82,
+		hipSpreadDeg = 2,
+		kneePitchDeg = -6,
+		anklePitchDeg = 18,
 		steerHandScale = 11,
 		steerLeftFactor = 1,
 		steerRightFactor = 1,
@@ -92,6 +108,10 @@ DriverPoseController.Presets = {
 		lElbow = { pitch = 76, yaw = 0, roll = 0 },
 		rShoulder = { pitch = 20, yaw = 7, roll = -8 },
 		rElbow = { pitch = 76, yaw = 0, roll = 0 },
+		hipPitchDeg = 80,
+		hipSpreadDeg = 2,
+		kneePitchDeg = -22,
+		anklePitchDeg = 18,
 		steerHandScale = 12,
 		steerLeftFactor = 1,
 		steerRightFactor = 1,
@@ -144,7 +164,7 @@ local function readSteerValue(seat: VehicleSeat, cachedVal: NumberValue?): (numb
 end
 
 function DriverPoseController.new(car: Model, driveSeat: VehicleSeat): DriverPoseController
-	local initialPose = tonumber(car:GetAttribute("SconDriverPose")) or 1
+	local initialPose = tonumber(car:GetAttribute("SconDriverPose")) or 3
 	initialPose = math.clamp(math.floor(initialPose + 0.5), 1, #DriverPoseController.Presets)
 
 	local hum = driveSeat.Occupant
@@ -203,6 +223,8 @@ function DriverPoseController._step(self: DriverPoseController, dt: number)
 	if isR6 then
 		local lSh = findJoint(char, { "Left Shoulder" })
 		local rSh = findJoint(char, { "Right Shoulder" })
+		local lHip = findJoint(char, { "Left Hip" })
+		local rHip = findJoint(char, { "Right Hip" })
 		local neck = findJoint(char, { "Neck" })
 		if lSh then
 			local lExtra = self.steerRatio * preset.steerHandScale * preset.steerLeftFactor
@@ -211,6 +233,12 @@ function DriverPoseController._step(self: DriverPoseController, dt: number)
 		if rSh then
 			local rExtra = -self.steerRatio * preset.steerHandScale * preset.steerRightFactor
 			setJointTransform(rSh, degAngles(0, 0, (preset.id == 2 and -20 or 24) + rExtra))
+		end
+		if lHip then
+			setJointTransform(lHip, degAngles(0, 0, -preset.hipPitchDeg))
+		end
+		if rHip then
+			setJointTransform(rHip, degAngles(0, 0, preset.hipPitchDeg))
 		end
 		if neck then
 			setJointTransform(neck, degAngles(preset.neckPitchDeg, -self.steerRatio * 8, 0))
@@ -225,6 +253,12 @@ function DriverPoseController._step(self: DriverPoseController, dt: number)
 	local lElbow = findJoint(char, { "LeftElbow" })
 	local rShoulder = findJoint(char, { "RightShoulder" })
 	local rElbow = findJoint(char, { "RightElbow" })
+	local lHip = findJoint(char, { "LeftHip" })
+	local lKnee = findJoint(char, { "LeftKnee" })
+	local lAnkle = findJoint(char, { "LeftAnkle" })
+	local rHip = findJoint(char, { "RightHip" })
+	local rKnee = findJoint(char, { "RightKnee" })
+	local rAnkle = findJoint(char, { "RightAnkle" })
 
 	local lPitchDelta = -self.steerRatio * preset.steerHandScale * preset.steerLeftFactor
 	local rPitchDelta = self.steerRatio * preset.steerHandScale * preset.steerRightFactor
@@ -241,6 +275,12 @@ function DriverPoseController._step(self: DriverPoseController, dt: number)
 		degAnglesYXZ(preset.rShoulder.pitch + rPitchDelta, preset.rShoulder.yaw, preset.rShoulder.roll)
 	)
 	setJointTransform(rElbow, degAngles(preset.rElbow.pitch, preset.rElbow.yaw, preset.rElbow.roll))
+	setJointTransform(lHip, degAnglesYXZ(preset.hipPitchDeg, preset.hipSpreadDeg, -preset.hipSpreadDeg))
+	setJointTransform(lKnee, degAngles(preset.kneePitchDeg, 0, 0))
+	setJointTransform(lAnkle, degAngles(preset.anklePitchDeg, 0, 0))
+	setJointTransform(rHip, degAnglesYXZ(preset.hipPitchDeg, -preset.hipSpreadDeg, preset.hipSpreadDeg))
+	setJointTransform(rKnee, degAngles(preset.kneePitchDeg, 0, 0))
+	setJointTransform(rAnkle, degAngles(preset.anklePitchDeg, 0, 0))
 end
 
 function DriverPoseController.Destroy(self: DriverPoseController)
@@ -265,8 +305,16 @@ function DriverPoseController.Destroy(self: DriverPoseController)
 			"LeftElbow",
 			"RightShoulder",
 			"RightElbow",
+			"LeftHip",
+			"LeftKnee",
+			"LeftAnkle",
+			"RightHip",
+			"RightKnee",
+			"RightAnkle",
 			"Left Shoulder",
 			"Right Shoulder",
+			"Left Hip",
+			"Right Hip",
 		}) do
 			setJointTransform(findJoint(char, { jName }), CFrame.identity)
 		end
