@@ -212,54 +212,200 @@ for name, value in pairs(DEFAULT_ATTRIBUTES) do
 end
 
 -- ============================================================================
--- 3. ENTRY & SAFE SIDE-EXIT CONTROLLER
+-- 3. ENTRY & SAFE SIDE-EXIT CONTROLLER (+ OCCUPANT NO-COLLISION SHIELD)
 -- ============================================================================
-local drivePrompt = seat:FindFirstChild("DrivePrompt") :: ProximityPrompt?
-if not drivePrompt then
+type OccupantNoCollideEntry = {
+	folder: Folder,
+	descConn: RBXScriptConnection?,
+	cleanupThread: thread?,
+}
+
+local occupantNoCollideByChar: { [Model]: OccupantNoCollideEntry } = {}
+local recentOccupantExitAt: { [Model]: number } = {}
+
+local function getVehicleCollidableParts(): { BasePart }
+	local list = {} :: { BasePart }
+	for _, desc in ipairs(car:GetDescendants()) do
+		if
+			desc:IsA("BasePart")
+			and (desc.CanCollide or desc.Name == "SconHitbox" or (desc.Parent and desc.Parent.Name == "SconHitbox"))
+		then
+			table.insert(list, desc)
+		end
+	end
+	return list
+end
+
+local function addNoCollideForPart(folder: Folder, charPart: BasePart, carParts: { BasePart })
+	for _, carPart in ipairs(carParts) do
+		local nc = Instance.new("NoCollisionConstraint")
+		nc.Part0 = charPart
+		nc.Part1 = carPart
+		nc.Parent = folder
+	end
+end
+
+local function attachOccupantNoCollision(char: Model)
+	local existing = occupantNoCollideByChar[char]
+	if existing then
+		if existing.cleanupThread then
+			pcall(task.cancel, existing.cleanupThread)
+			existing.cleanupThread = nil
+		end
+		return
+	end
+
+	local folder = Instance.new("Folder")
+	folder.Name = "SconOccupantNoCollide_" .. char.Name
+	folder.Parent = car
+
+	local carParts = getVehicleCollidableParts()
+	for _, d in ipairs(char:GetDescendants()) do
+		if d:IsA("BasePart") then
+			addNoCollideForPart(folder, d, carParts)
+		end
+	end
+
+	local descConn = char.DescendantAdded:Connect(function(d: Instance)
+		if d:IsA("BasePart") and folder.Parent then
+			addNoCollideForPart(folder, d, getVehicleCollidableParts())
+		end
+	end)
+
+	occupantNoCollideByChar[char] = {
+		folder = folder,
+		descConn = descConn,
+		cleanupThread = nil,
+	}
+end
+
+local function scheduleDetachOccupantNoCollision(char: Model)
+	local entry = occupantNoCollideByChar[char]
+	if not entry then
+		return
+	end
+	if entry.descConn then
+		entry.descConn:Disconnect()
+		entry.descConn = nil
+	end
+	if entry.cleanupThread then
+		pcall(task.cancel, entry.cleanupThread)
+	end
+	entry.cleanupThread = task.delay(0.45, function()
+		if occupantNoCollideByChar[char] == entry then
+			occupantNoCollideByChar[char] = nil
+		end
+		if entry.folder.Parent then
+			entry.folder:Destroy()
+		end
+	end)
+end
+
+local existingPrompt = seat:FindFirstChild("DrivePrompt")
+local drivePrompt: ProximityPrompt
+if existingPrompt and existingPrompt:IsA("ProximityPrompt") then
+	drivePrompt = existingPrompt
+else
 	drivePrompt = Instance.new("ProximityPrompt")
 	drivePrompt.Name = "DrivePrompt"
 	drivePrompt.ObjectText = "Tesla Roadster"
-	drivePrompt.ActionText = "ขับรถ (Drive)"
-	drivePrompt.KeyboardKeyCode = Enum.KeyCode.F
 	drivePrompt.HoldDuration = 0
-	drivePrompt.MaxActivationDistance = 12
-	drivePrompt.RequiresLineOfSight = false
 	drivePrompt.Parent = seat
-else
-	drivePrompt.KeyboardKeyCode = Enum.KeyCode.F
-	drivePrompt.ActionText = "ขับรถ (Drive)"
 end
+drivePrompt.KeyboardKeyCode = Enum.KeyCode.F
+drivePrompt.ActionText = "ขับรถ (Drive)"
+drivePrompt.MaxActivationDistance = 15
+drivePrompt.RequiresLineOfSight = false
 
 drivePrompt.Triggered:Connect(function(player: Player)
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if hum and not seat.Occupant then
+	if hum and not seat.Occupant and char then
+		attachOccupantNoCollision(char)
 		seat:Sit(hum)
 	end
 end)
+
+local function findSafeExitCFrame(char: Model, targetSeat: Seat | VehicleSeat, isDriver: boolean): CFrame
+	local weightPart = bodyModel:FindFirstChild("#Weight") :: BasePart?
+	local centerPos = weightPart and weightPart.Position or targetSeat.Position
+	local flatFwd = Vector3.new(targetSeat.CFrame.LookVector.X, 0, targetSeat.CFrame.LookVector.Z)
+	if flatFwd.Magnitude < 0.05 then
+		flatFwd = Vector3.new(targetSeat.CFrame.UpVector.X, 0, targetSeat.CFrame.UpVector.Z)
+	end
+	flatFwd = flatFwd.Magnitude > 0.05 and flatFwd.Unit or Vector3.new(0, 0, -1)
+	local flatRight = flatFwd:Cross(Vector3.yAxis).Unit
+
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.FilterDescendantsInstances = { car, char }
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = { car, char }
+	rayParams.RespectCanCollide = true
+
+	local sideOrder = if isDriver then { -6.2, 6.2 } else { 6.2, -6.2 }
+	local candidates = {
+		centerPos + flatRight * sideOrder[1] + Vector3.new(0, 1.5, 0),
+		centerPos + flatRight * sideOrder[2] + Vector3.new(0, 1.5, 0),
+		centerPos + Vector3.new(0, 5.8, 0),
+		centerPos - flatFwd * 9.6 + Vector3.new(0, 1.5, 0),
+		centerPos + flatFwd * 9.8 + Vector3.new(0, 1.5, 0),
+	}
+
+	local chosenPos = candidates[1]
+	for _, pos in ipairs(candidates) do
+		local blocking = workspace:GetPartBoundsInBox(CFrame.new(pos), Vector3.new(2.2, 4.4, 2.2), overlapParams)
+		local hasSolid = false
+		for _, part in ipairs(blocking) do
+			if part.CanCollide then
+				hasSolid = true
+				break
+			end
+		end
+		if not hasSolid then
+			chosenPos = pos
+			break
+		end
+	end
+
+	local floorHit = workspace:Raycast(chosenPos + Vector3.new(0, 1.0, 0), Vector3.new(0, -8.0, 0), rayParams)
+	if floorHit then
+		chosenPos = Vector3.new(chosenPos.X, math.max(floorHit.Position.Y + 3.0, chosenPos.Y), chosenPos.Z)
+	end
+	return CFrame.lookAt(chosenPos, chosenPos + flatFwd)
+end
 
 local function ejectOccupantToSide(player: Player, targetSeat: Seat | VehicleSeat, isDriver: boolean)
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not hum or not hrp then
+	if not hum or not hrp or not char then
 		return
 	end
 
+	attachOccupantNoCollision(char)
+	recentOccupantExitAt[char] = os.clock()
+
 	-- Unseat safely
-	hum.Sit = false
 	hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-	hum.Jump = true
+	hum.Sit = false
 
 	local seatWeld = targetSeat:FindFirstChild("SeatWeld")
 	if seatWeld then
 		seatWeld:Destroy()
 	end
 
-	-- Warp to safe position beside door (Driver = Left -5.8 studs, Passenger = Right +5.8 studs)
-	local sideOffset = isDriver and -5.8 or 5.8
-	local exitCF = targetSeat.CFrame * CFrame.new(sideOffset, 0.8, 0)
+	local exitCF = findSafeExitCFrame(char, targetSeat, isDriver)
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.AssemblyLinearVelocity = Vector3.zero
+			part.AssemblyAngularVelocity = Vector3.zero
+		end
+	end
 	char:PivotTo(exitCF)
+	scheduleDetachOccupantNoCollision(char)
 end
 
 exitRemote.OnServerEvent:Connect(function(player: Player)
@@ -493,6 +639,12 @@ local function handlePedestrianHit(humanoid: Humanoid, hitPart: BasePart)
 	if not char or char == (seat.Occupant and seat.Occupant.Parent) then
 		return
 	end
+	if char:IsA("Model") then
+		local exitedAt = recentOccupantExitAt[char]
+		if exitedAt and (os.clock() - exitedAt) < 1.5 then
+			return
+		end
+	end
 
 	local now = os.clock()
 	if now - lastPedImpact < 0.35 then
@@ -565,6 +717,10 @@ local function processImpact(sourcePart: BasePart, otherPart: BasePart)
 		return
 	end
 
+	if car:GetAttribute("SconWallClimbActive") == true or car:GetAttribute("SconFlightBoostActive") == true then
+		return
+	end
+
 	local now = os.clock()
 	if now - lastImpactTime < 0.65 then
 		return
@@ -612,6 +768,8 @@ end
 if impactFolder then
 	for _, sensor in ipairs(impactFolder:GetChildren()) do
 		if sensor:IsA("BasePart") then
+			sensor.CanCollide = false
+			sensor.CanQuery = false
 			sensor.CanTouch = true
 			sensor.Touched:Connect(function(otherPart: BasePart)
 				if otherPart:IsA("BasePart") then
@@ -676,8 +834,10 @@ guiTemplate.Enabled = false
 guiTemplate.ResetOnSpawn = false
 
 local currentPlayer: Player? = nil
+local currentDriverChar: Model? = nil
 local function updateOccupant()
 	local hum = seat.Occupant
+	local newChar = (hum and hum.Parent and hum.Parent:IsA("Model")) and hum.Parent or nil
 	local newPlayer = hum and Players:GetPlayerFromCharacter(hum.Parent) or nil
 
 	if not hum then
@@ -685,6 +845,11 @@ local function updateOccupant()
 		hornSound:Stop()
 		seat.Anchored = false
 		drivePrompt.Enabled = true
+		if currentDriverChar then
+			recentOccupantExitAt[currentDriverChar] = os.clock()
+			scheduleDetachOccupantNoCollision(currentDriverChar)
+			currentDriverChar = nil
+		end
 		if currentPlayer then
 			local pg = currentPlayer:FindFirstChildOfClass("PlayerGui")
 			if pg then
@@ -700,6 +865,13 @@ local function updateOccupant()
 
 	seat.Anchored = false
 	drivePrompt.Enabled = false
+	if newChar then
+		if currentDriverChar and currentDriverChar ~= newChar then
+			scheduleDetachOccupantNoCollision(currentDriverChar)
+		end
+		currentDriverChar = newChar
+		attachOccupantNoCollision(newChar)
+	end
 
 	if currentPlayer == newPlayer then
 		return

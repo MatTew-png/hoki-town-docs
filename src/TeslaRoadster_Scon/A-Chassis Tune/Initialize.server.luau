@@ -17,6 +17,9 @@ if not seat then
 	return
 end
 seat.Disabled = false -- Instant entry enabled for Hoki Town
+pcall(function()
+	car.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+end)
 
 -- Anchor every part before the load delay / constraint teardown so unanchored workspace snapshots cannot fall
 for _, descendant in car:GetDescendants() do
@@ -128,18 +131,30 @@ for _, descendant in car:GetDescendants() do
 end
 
 -- Lower collision rebound on the car's own collidable parts while preserving density and grip.
+-- Disable physical blocking on ImpactSensors so 90-degree vertical wall climbs never snag the nose/tail.
 local COLLISION_ELASTICITY = 0
 local COLLISION_ELASTICITY_WEIGHT = 100
+local bodyModel = car:FindFirstChild("Body")
+local impactSensorsFolder = bodyModel and bodyModel:FindFirstChild("ImpactSensors")
 for _, descendant in car:GetDescendants() do
-	if descendant:IsA("BasePart") and descendant.CanCollide then
-		local properties = descendant.CurrentPhysicalProperties
-		descendant.CustomPhysicalProperties = PhysicalProperties.new(
-			properties.Density,
-			properties.Friction,
-			COLLISION_ELASTICITY,
-			properties.FrictionWeight,
-			COLLISION_ELASTICITY_WEIGHT
-		)
+	if descendant:IsA("BasePart") then
+		if impactSensorsFolder and descendant:IsDescendantOf(impactSensorsFolder) then
+			descendant.CanCollide = false
+			descendant.CanQuery = false
+			descendant.CanTouch = true
+		elseif bodyModel and descendant:IsDescendantOf(bodyModel) then
+			-- Keep visual car meshes and weight parts non-collidable; SconHitbox provides tight fitted collision.
+			descendant.CanCollide = false
+		elseif descendant.CanCollide then
+			local properties = descendant.CurrentPhysicalProperties
+			descendant.CustomPhysicalProperties = PhysicalProperties.new(
+				properties.Density,
+				properties.Friction,
+				COLLISION_ELASTICITY,
+				properties.FrictionWeight,
+				COLLISION_ELASTICITY_WEIGHT
+			)
+		end
 	end
 end
 
@@ -213,8 +228,10 @@ local function symmetrizeAxleGeometry(leftName: string, rightName: string)
 	then
 		local r0Local = carCenterCF:PointToObjectSpace(rightSpring.Attachment0.WorldPosition)
 		local r1Local = carCenterCF:PointToObjectSpace(rightSpring.Attachment1.WorldPosition)
-		leftSpring.Attachment0.WorldPosition = carCenterCF:PointToWorldSpace(Vector3.new(-r0Local.X, r0Local.Y, r0Local.Z))
-		leftSpring.Attachment1.WorldPosition = carCenterCF:PointToWorldSpace(Vector3.new(-r1Local.X, r1Local.Y, r1Local.Z))
+		leftSpring.Attachment0.WorldPosition =
+			carCenterCF:PointToWorldSpace(Vector3.new(-r0Local.X, r0Local.Y, r0Local.Z))
+		leftSpring.Attachment1.WorldPosition =
+			carCenterCF:PointToWorldSpace(Vector3.new(-r1Local.X, r1Local.Y, r1Local.Z))
 	end
 end
 
@@ -280,8 +297,7 @@ for _, v in Drive do
 	else
 		wdensity = (Tune.RWheelWeight * Units.Mass_kg) / (math.pi * (v.Size.Y / 2) ^ 2 * v.Size.X)
 	end
-	v.CustomPhysicalProperties =
-		PhysicalProperties.new(wdensity, cpp.Friction, cpp.Elasticity, cpp.FrictionWeight, cpp.ElasticityWeight)
+	v.CustomPhysicalProperties = PhysicalProperties.new(wdensity, math.max(cpp.Friction, 2.0), 0, 100, 100)
 	v.Massless = false
 	v.CanCollide = true
 
@@ -818,6 +834,8 @@ if mass * Units.Mass_kg < Tune.Weight * 0.453592 then
 	weightB.Name = "#Weight"
 	weightB.Anchored = true
 	weightB.CanCollide = false
+	weightB.CanQuery = false
+	weightB.CanTouch = false
 	weightB.BrickColor = BrickColor.new("Really black")
 	weightB.TopSurface = Enum.SurfaceType.Smooth
 	weightB.BottomSurface = Enum.SurfaceType.Smooth
@@ -913,6 +931,99 @@ task.wait()
 for i, v in (script:GetChildren()) do
 	if v:IsA("ModuleScript") then
 		require(v)
+	end
+end
+
+-- Build fitted composite vehicle hitbox (clear of wheel wells and ground compression, solid to walls/cars/players)
+local existingHitbox = car.Body:FindFirstChild("SconHitbox")
+if existingHitbox then
+	existingHitbox:Destroy()
+end
+
+local hitboxRefPart = car.Body:FindFirstChild("#Weight") :: BasePart? or car.DriveSeat
+local hitboxRefCF = CFrame.new(hitboxRefPart.Position) * (car.DriveSeat.CFrame - car.DriveSeat.CFrame.Position)
+local hitboxFolder = Instance.new("Folder")
+hitboxFolder.Name = "SconHitbox"
+hitboxFolder.Parent = car.Body
+
+local hitboxSpecs = {
+	{
+		name = "CenterSpine",
+		kind = "Part",
+		size = Vector3.new(3.10, 1.45, 13.90),
+		offset = Vector3.new(0.00, 0.50, -0.60),
+	},
+	{
+		name = "SideDoorL",
+		kind = "Part",
+		size = Vector3.new(1.85, 1.45, 6.30),
+		offset = Vector3.new(-2.48, 0.55, -0.50),
+	},
+	{
+		name = "SideDoorR",
+		kind = "Part",
+		size = Vector3.new(1.85, 1.45, 6.30),
+		offset = Vector3.new(2.48, 0.55, -0.50),
+	},
+	{
+		name = "FrontBumper",
+		kind = "WedgePart",
+		size = Vector3.new(5.80, 0.96, 1.30),
+		offset = Vector3.new(0.00, 0.72, -7.45),
+	},
+	{
+		name = "RearBumper",
+		kind = "Part",
+		size = Vector3.new(5.80, 1.15, 1.10),
+		offset = Vector3.new(0.00, 0.80, 6.25),
+	},
+	{
+		name = "CabinRoof",
+		kind = "Part",
+		size = Vector3.new(5.10, 1.65, 6.00),
+		offset = Vector3.new(0.00, 2.05, -0.50),
+	},
+}
+
+local hitboxPhys = PhysicalProperties.new(0.01, 0.05, 0, 100, 100)
+local hitboxParts = {} :: { BasePart }
+for _, spec in ipairs(hitboxSpecs) do
+	local box = Instance.new(spec.kind) :: BasePart
+	box.Name = spec.name
+	box.Size = spec.size
+	box.CFrame = hitboxRefCF * CFrame.new(spec.offset)
+	box.Anchored = true
+	box.CanCollide = true
+	box.CanTouch = true
+	box.CanQuery = false
+	box.Massless = true
+	box.Transparency = 1
+	box.CastShadow = false
+	box.CollisionGroup = "Default"
+	box.CustomPhysicalProperties = hitboxPhys
+	box.Parent = hitboxFolder
+	table.insert(hitboxParts, box)
+end
+
+-- Never allow internal collision between body hitbox and wheels / seats
+local wheelParts = {} :: { BasePart }
+if car:FindFirstChild("Wheels") then
+	for _, w in ipairs(car.Wheels:GetDescendants()) do
+		if w:IsA("BasePart") then
+			table.insert(wheelParts, w)
+		end
+	end
+end
+for _, hb in ipairs(hitboxParts) do
+	local seatNC = Instance.new("NoCollisionConstraint")
+	seatNC.Part0 = hb
+	seatNC.Part1 = car.DriveSeat
+	seatNC.Parent = hb
+	for _, wp in ipairs(wheelParts) do
+		local nc = Instance.new("NoCollisionConstraint")
+		nc.Part0 = hb
+		nc.Part1 = wp
+		nc.Parent = hb
 	end
 end
 
@@ -1153,7 +1264,9 @@ RunService.Heartbeat:Connect(function()
 	local driverPlayer = Players:GetPlayerFromCharacter(hum.Parent)
 	if driverPlayer then
 		local playerGui = driverPlayer:FindFirstChild("PlayerGui")
-		if (playerGui and playerGui:FindFirstChild("A-Chassis Interface")) or (os.clock() - seatOccupyStartedAt < 0.8) then
+		if
+			(playerGui and playerGui:FindFirstChild("A-Chassis Interface")) or (os.clock() - seatOccupyStartedAt < 0.8)
+		then
 			return
 		end
 	end
@@ -1251,6 +1364,14 @@ seat.ChildRemoved:Connect(function(child: Instance)
 
 		-- Return physics ownership to the server as soon as the driver leaves.
 		setVehicleNetworkOwner(nil)
+		car:SetAttribute("SconWallClimbActive", false)
+		car:SetAttribute("SconFlightBoostActive", false)
+		local weightBallast = car:FindFirstChild("Body") and car.Body:FindFirstChild("#Weight")
+		local clientForce = weightBallast and weightBallast:FindFirstChild("SconPhysicsForce")
+		if clientForce and clientForce:IsA("VectorForce") then
+			clientForce.Force = Vector3.zero
+			clientForce.Enabled = false
+		end
 
 		-- Clear replicated controls and persist the parking-brake state.
 		local interfaceValues = script.Parent["A-Chassis Interface"].Values
@@ -1429,18 +1550,18 @@ if ballast and #Wheels > 0 then
 		local grounded = (currentGroundHits ~= nil and currentGroundHits > 0)
 		local climbingStep = car:GetAttribute("SconStepClimbActive") == true
 		local risingTooFast = ballast.AssemblyLinearVelocity.Y >= 45
-		if not airborne or grounded or climbingStep or risingTooFast then
+		if seat.Occupant ~= nil or not airborne or grounded or climbingStep or risingTooFast then
 			gravityCompensation.Enabled = false
 			gravityCompensation.Force = Vector3.zero
 			return
 		end
 
 		local currentTotalMass = ballast.Mass + nonBallastMass
-		local targetAirGravity = math.max(AIRBORNE_EFFECTIVE_GRAVITY, 95)
+		local targetAirGravity = math.max(AIRBORNE_EFFECTIVE_GRAVITY, 10)
 		local wheelGravity = (Tune.GravComp and Tune.GravComp > 0) and Tune.GravComp or workspace.Gravity
 		local totalGroundWeight = ballast.Mass * workspace.Gravity + nonBallastMass * wheelGravity
 		local desiredAirWeight = currentTotalMass * targetAirGravity
-		local liftForceY = math.clamp(totalGroundWeight - desiredAirWeight, 0, currentTotalMass * 115)
+		local liftForceY = math.clamp(totalGroundWeight - desiredAirWeight, 0, currentTotalMass * 175)
 
 		gravityCompensation.Attachment0 = gravityCompensation.Attachment0 or curbAttachment
 		gravityCompensation.RelativeTo = Enum.ActuatorRelativeTo.World
@@ -1476,6 +1597,14 @@ if ballast and #Wheels > 0 then
 	airborneConnection = RunService.Heartbeat:Connect(function(deltaTime)
 		if not car.Parent or not ballast.Parent then
 			airborneConnection:Disconnect()
+			return
+		end
+		-- While a driver is seated, Drive.client.luau owns surface adhesion and flight forces directly.
+		if seat.Occupant ~= nil then
+			if gravityCompensation and gravityCompensation:IsA("VectorForce") and gravityCompensation.Enabled then
+				gravityCompensation.Enabled = false
+				gravityCompensation.Force = Vector3.zero
+			end
 			return
 		end
 
@@ -1576,7 +1705,10 @@ if ballast and #Wheels > 0 then
 					nearestGroundDistance == math.huge and "none" or string.format("%.2f studs", nearestGroundDistance)
 				)
 			)
-		elseif airborne or gravityCompensation and gravityCompensation:IsA("VectorForce") and gravityCompensation.Enabled then
+		elseif
+			airborne
+			or gravityCompensation and gravityCompensation:IsA("VectorForce") and gravityCompensation.Enabled
+		then
 			updateGravityCompensation(groundHitCount)
 		end
 	end)

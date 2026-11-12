@@ -62,9 +62,15 @@ for _, legacyName in ipairs({ "WindSound", "BodySound" }) do
 	end
 end
 
-local dragPart: BasePart = (if UseWeight or not Directory then weight else Directory:FindFirstChild("Drag") or weight) :: BasePart
-local dfPart: BasePart = (if UseWeight or not Directory then weight else Directory:FindFirstChild("DownforceF") or weight) :: BasePart
-local drPart: BasePart = (if UseWeight or not Directory then weight else Directory:FindFirstChild("DownforceR") or weight) :: BasePart
+local dragPart: BasePart = (
+	if UseWeight or not Directory then weight else Directory:FindFirstChild("Drag") or weight
+) :: BasePart
+local dfPart: BasePart = (
+	if UseWeight or not Directory then weight else Directory:FindFirstChild("DownforceF") or weight
+) :: BasePart
+local drPart: BasePart = (
+	if UseWeight or not Directory then weight else Directory:FindFirstChild("DownforceR") or weight
+) :: BasePart
 
 local function ensureAttachment(part: BasePart, name: string, offset: Vector3): Attachment
 	local targetOffset = offset
@@ -100,8 +106,10 @@ local function ensureVectorForce(part: BasePart, name: string, att: Attachment):
 end
 
 local dragAttach = ensureAttachment(dragPart, "DragAttachment", Vector3.zero)
-local dfAttach = ensureAttachment(dfPart, "DownforceFAttachment", Vector3.new(0, 0, UseWeight and -weight.Size.Z / 2 or 0))
-local drAttach = ensureAttachment(drPart, "DownforceRAttachment", Vector3.new(0, 0, UseWeight and weight.Size.Z / 2 or 0))
+local dfAttach =
+	ensureAttachment(dfPart, "DownforceFAttachment", Vector3.new(0, 0, UseWeight and -weight.Size.Z / 2 or 0))
+local drAttach =
+	ensureAttachment(drPart, "DownforceRAttachment", Vector3.new(0, 0, UseWeight and weight.Size.Z / 2 or 0))
 
 local dragForce = ensureVectorForce(dragPart, "DragForce", dragAttach)
 local dfForce = ensureVectorForce(dfPart, "DownforceFForce", dfAttach)
@@ -228,7 +236,8 @@ while active and car.Parent do
 		if toRay and toRay.Instance:IsA("BasePart") then
 			local targetPart = toRay.Instance
 			aeroParamsFrom.FilterDescendantsInstances = targetPart:GetConnectedParts()
-			local fromRay = Workspace:Raycast(toRay.Position, -targetPart.AssemblyLinearVelocity * SlipstreamTime, aeroParamsFrom)
+			local fromRay =
+				Workspace:Raycast(toRay.Position, -targetPart.AssemblyLinearVelocity * SlipstreamTime, aeroParamsFrom)
 			if fromRay and fromRay.Instance:IsDescendantOf(car) then
 				local slipLen = (targetPart.AssemblyLinearVelocity * SlipstreamTime).Magnitude
 				if slipLen > 0.01 then
@@ -239,8 +248,9 @@ while active and car.Parent do
 	end
 
 	local isAirborne = car:GetAttribute("PiggyCarAirborneWeightReduced") == true
-	local dragScale = isAirborne and 0.25 or 1
-	local downforceScale = isAirborne and 0 or groundContactScale
+	local isWallClimbing = car:GetAttribute("SconWallClimbActive") == true
+	local dragScale = isAirborne and 0.14 or 1
+	local downforceScale = (isAirborne or isWallClimbing) and 0 or groundContactScale
 
 	local carVel = VelocityValue.Value * toKMH
 	local windVel = Workspace.GlobalWind * toKMH

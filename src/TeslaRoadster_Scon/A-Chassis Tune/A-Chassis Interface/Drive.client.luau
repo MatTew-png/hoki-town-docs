@@ -42,8 +42,9 @@ local values = script.Parent:WaitForChild("Values", 5)
 local tuneFolder = (car and (car:FindFirstChild("Hoki-Chassis Tune") or car:FindFirstChild("A-Chassis Tune")))
 	or script.Parent.Parent
 local _Tune = tuneFolder and require(tuneFolder)
-local ArcadeJumpRemote = tuneFolder and tuneFolder:FindFirstChild("ArcadeJumpRequest")
 local Units = tuneFolder and tuneFolder:FindFirstChild("README") and require(tuneFolder.README.Units)
+local SpiderFlightEngine = require(script.Parent:WaitForChild("SpiderFlightEngine"))
+local StuntCamera = require(script.Parent:WaitForChild("StuntCamera"))
 print(">>> [DRIVE CLIENT ACTIVE] Drive.client.luau initialized for car: " .. tostring(car))
 
 -- ============================================================================
@@ -320,6 +321,8 @@ local _CS = _Tune.CSEnabled
 local _CSActive = false
 local _CSAmt = 0
 local _MidAirActive = false
+local stunt: any = nil
+local stuntCam: any = nil
 local _FrontGroundedCount = 2
 local _RearGroundedCount = 2
 local _WheelGrounded = { FL = true, FR = true, RL = true, RR = true }
@@ -497,6 +500,18 @@ local function getEffectiveSeatThrottle(): number
 	return driveSeat and driveSeat.ThrottleFloat or 0
 end
 
+local function getEffectiveSeatSteer(): number
+	local testSteer = RunService:IsStudio() and car:GetAttribute("SconTestSteer")
+	if typeof(testSteer) == "number" then
+		return math.clamp(testSteer, -1, 1)
+	end
+	return driveSeat and driveSeat.SteerFloat or 0
+end
+
+local function isBoostActive(): boolean
+	return stunt ~= nil and stunt:IsBoostActive(_IsOn) or false
+end
+
 local function clearCurbAssistState()
 	curbClimbLatch.Active = false
 	curbClimbLatch.TargetTopY = 0
@@ -509,7 +524,13 @@ local function clearCurbAssistState()
 end
 
 local function UpdateCurbAssist(deltaTime: number)
-	if not _Tune.CurbAssistEnabled or not curbAssistForce or not weightBrick then
+	if
+		not _Tune.CurbAssistEnabled
+		or not curbAssistForce
+		or not weightBrick
+		or _MidAirActive
+		or (stunt and (stunt.wallClimbActive or stunt.surfaceNormal.Y < 0.72 or os.clock() < stunt.jumpDetachUntil))
+	then
 		clearCurbAssistState()
 		return
 	end
@@ -532,8 +553,12 @@ local function UpdateCurbAssist(deltaTime: number)
 	local planarVelocity = Vector3.new(_Velocity.X, 0, _Velocity.Z)
 	local approachSpeed = math.max(0, planarVelocity:Dot(forward))
 	local maxStep = (_Tune.CurbAssistMaxStep and _Tune.CurbAssistMaxStep > 0) and _Tune.CurbAssistMaxStep or 2.0
-	local baseProbe = (_Tune.CurbAssistProbeDistance and _Tune.CurbAssistProbeDistance > 0) and _Tune.CurbAssistProbeDistance or 0.95
-	local maxProbe = (_Tune.CurbAssistMaxProbeDistance and _Tune.CurbAssistMaxProbeDistance > baseProbe) and _Tune.CurbAssistMaxProbeDistance or 2.6
+	local baseProbe = (_Tune.CurbAssistProbeDistance and _Tune.CurbAssistProbeDistance > 0)
+			and _Tune.CurbAssistProbeDistance
+		or 0.95
+	local maxProbe = (_Tune.CurbAssistMaxProbeDistance and _Tune.CurbAssistMaxProbeDistance > baseProbe)
+			and _Tune.CurbAssistMaxProbeDistance
+		or 2.6
 	local lookAhead = _Tune.CurbAssistLookAheadSeconds or 0.04
 	local probeDistance = math.clamp(baseProbe + approachSpeed * lookAhead, baseProbe, maxProbe)
 
@@ -570,12 +595,9 @@ local function UpdateCurbAssist(deltaTime: number)
 				continue
 			end
 
-			local topProbeOrigin = Vector3.new(obstacle.Position.X, floorY + maxStep + 0.35, obstacle.Position.Z) + forward * 0.25
-			local topHit = workspace:Raycast(
-				topProbeOrigin,
-				-Vector3.yAxis * (maxStep + 0.50),
-				curbAssistRaycastParams
-			)
+			local topProbeOrigin = Vector3.new(obstacle.Position.X, floorY + maxStep + 0.35, obstacle.Position.Z)
+				+ forward * 0.25
+			local topHit = workspace:Raycast(topProbeOrigin, -Vector3.yAxis * (maxStep + 0.50), curbAssistRaycastParams)
 			if not topHit or topHit.Normal.Y < 0.65 then
 				continue
 			end
@@ -625,7 +647,11 @@ local function UpdateCurbAssist(deltaTime: number)
 	local totalWeightForce = weightMass * workspace.Gravity + nonWeightMass * gravComp
 
 	local activeStep = math.clamp(bestStepHeight > 0 and bestStepHeight or curbClimbLatch.StepHeight, 0.25, maxStep)
-	local maxUpSpeed = math.max((_Tune.CurbAssistMaxUpwardSpeed and _Tune.CurbAssistMaxUpwardSpeed > 0) and _Tune.CurbAssistMaxUpwardSpeed or 6.5, 1.0)
+	local maxUpSpeed = math.max(
+		(_Tune.CurbAssistMaxUpwardSpeed and _Tune.CurbAssistMaxUpwardSpeed > 0) and _Tune.CurbAssistMaxUpwardSpeed
+			or 6.5,
+		1.0
+	)
 	local climbAccelMax = math.max(_Tune.CurbAssistAcceleration or 48, 12)
 
 	-- Smooth velocity-regulated climb: scales gently with step size and caps strictly <= maxUpSpeed
@@ -633,7 +659,8 @@ local function UpdateCurbAssist(deltaTime: number)
 	local currentVy = weightBrick.AssemblyLinearVelocity.Y
 	local speedError = targetVy - currentVy
 	local commandedAccel = math.clamp(speedError / 0.08, -28, climbAccelMax)
-	local liftForce = math.clamp(totalWeightForce + totalMass * commandedAccel, 0, totalWeightForce + totalMass * climbAccelMax)
+	local liftForce =
+		math.clamp(totalWeightForce + totalMass * commandedAccel, 0, totalWeightForce + totalMass * climbAccelMax)
 
 	curbAssistForce.Force = Vector3.yAxis * liftForce
 	car:SetAttribute("SconStepClimbActive", true)
@@ -652,9 +679,30 @@ local function UpdateCurbAssist(deltaTime: number)
 end
 
 -- Shutdown
+local function unbindDriverControls()
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+	end
+	local CAS = game:GetService("ContextActionService")
+	CAS:UnbindAction("HokiSpacebarHandbrakeSink")
+	CAS:UnbindAction("HokiDriverCleanExit")
+	CAS:UnbindAction("HokiTeslaHorn")
+	CAS:UnbindAction("HokiBoostFlight")
+	if stuntCam then
+		stuntCam:Destroy()
+		stuntCam = nil
+	end
+end
+
 driveSeat.ChildRemoved:Connect(function(child: Instance)
 	if child.Name == "SeatWeld" and child:IsA("Weld") then
+		unbindDriverControls()
 		clearCurbAssistState()
+		if stunt then
+			stunt:ResetOnExit()
+		end
 		if _Tune.Mobile and LastInputWasMobile then
 			_Tune.AutoShiftVers = _InitialAutoShiftVers
 		end
@@ -1001,7 +1049,6 @@ local function DealWithMobileInput()
 		if input.UserInputType ~= Enum.UserInputType.Touch then
 			return
 		end
-		ArcadeJumpRemote:FireServer()
 	end)
 
 	mobile.ModeSwitch.MouseButton1Click:Connect(function()
@@ -1109,7 +1156,8 @@ local _SeatSteerActive = false
 local function Inputs(dt: number)
 	local deltaTime = dt * 60
 	local seatThrot = getEffectiveSeatThrottle()
-	local seatSteer = car:FindFirstChild("DriveSeat") and car.DriveSeat.SteerFloat or 0
+	local seatSteer = getEffectiveSeatSteer()
+	local boostNow = isBoostActive()
 
 	-- Direct native sync: Ensure Roblox seat ThrottleFloat & SteerFloat feed into A-Chassis
 	if seatThrot > 0.05 then
@@ -1136,8 +1184,11 @@ local function Inputs(dt: number)
 		end
 	end
 
-	local desiredThrottle = math.max(_IThrot, math.clamp(seatThrot, 0, 1))
 	local desiredBrake = math.max(_IBrake, math.clamp(-seatThrot, 0, 1))
+	local desiredThrottle = math.max(_IThrot, math.clamp(seatThrot, 0, 1))
+	if boostNow and desiredBrake < 0.05 then
+		desiredThrottle = 1
+	end
 
 	if not _SteerL and not _SteerR and not _MSteer then
 		if math.abs(seatSteer) > 0.05 then
@@ -1347,10 +1398,8 @@ local function Steering(dt: number)
 		and _Velocity.Magnitude * (Units.Length_mm / 1000) * 3.6 > _Tune.CSSpeedThresh
 		and (_TapDriftActive or math.abs(localSideSpeed) >= 8)
 	then
-		_CSAmt = (
-			localSideSpeed
-			/ math.max(_Velocity.Magnitude * (Units.Length_mm / 1000) * 3.6, _Tune.CSSpeedThresh)
-		) * (_Tune.CSAmt / 100)
+		_CSAmt = (localSideSpeed / math.max(_Velocity.Magnitude * (Units.Length_mm / 1000) * 3.6, _Tune.CSSpeedThresh))
+			* (_Tune.CSAmt / 100)
 	else
 		_CSAmt = 0
 	end
@@ -1718,7 +1767,16 @@ local function Engine(dt: number)
 		_GThrot = _Tune.IdleThrottle / 100
 	end
 
-	local limit = (_CGear < 0 and _Tune.ReverseSpeed or _Tune.SpeedLimit)
+	local boostNow = isBoostActive()
+	local forwardLimit = (boostNow and _Tune.BoostMaxSpeedKmh) and math.max(_Tune.SpeedLimit, _Tune.BoostMaxSpeedKmh)
+		or _Tune.SpeedLimit
+	if stunt and stunt.wallClimbActive and _Tune.SpiderMaxClimbSpeed then
+		forwardLimit = math.min(
+			forwardLimit > 0 and forwardLimit or 9999,
+			(_Tune.SpiderMaxClimbSpeed / (Units.Velocity_mdivs / 3.6)) * (boostNow and 1.45 or 1)
+		)
+	end
+	local limit = (_CGear < 0 and _Tune.ReverseSpeed or forwardLimit)
 	if limit > 0 then
 		_GThrot = math.min(
 			_GThrot,
@@ -2193,7 +2251,13 @@ local function Engine(dt: number)
 
 			-- Update Forces (only add flywheel energy when actively throttling and not braking)
 			local seatThrottleFloat = getEffectiveSeatThrottle()
-			local noPedalInput = (_InThrot <= 0.02 and _InBrake <= 0.02 and _IThrot <= 0.02 and _IBrake <= 0.02 and math.abs(seatThrottleFloat) <= 0.05)
+			local noPedalInput = (
+				_InThrot <= 0.02
+				and _InBrake <= 0.02
+				and _IThrot <= 0.02
+				and _IBrake <= 0.02
+				and math.abs(seatThrottleFloat) <= 0.05
+			)
 			local flywheelAdd = (not noPedalInput and throt > 0.05 and brake < 0.05) and (_FlywheelEnergy / #Drive) or 0
 			local tqOUT = (tq * 1.356 * Units.Torque_nm * throt * tqTCS * on * clutch) + flywheelAdd
 			if noPedalInput or (brake > 0.05 and throt <= 0.05) or car:GetAttribute("VehiclePowerDisabled") == true then
@@ -2206,6 +2270,32 @@ local function Engine(dt: number)
 			local isRear = (data.Name == "RR" or data.Name == "RL")
 			local handbrakeEngaged = _SpaceHeld or _TapDriftActive
 
+			local effectiveSpLimit = _spLimit
+			if
+				boostNow
+				and _CGear >= 1
+				and _Tune.SpeedLimit > 0
+				and _Tune.BoostMaxSpeedKmh
+				and _Tune.BoostMaxSpeedKmh > _Tune.SpeedLimit
+			then
+				effectiveSpLimit = _spLimit * (_Tune.BoostMaxSpeedKmh / _Tune.SpeedLimit)
+			end
+			if
+				stunt
+				and stunt.wallClimbActive
+				and _CGear >= 1
+				and _Tune.SpeedLimit > 0
+				and _Tune.SpiderMaxClimbSpeed
+			then
+				effectiveSpLimit = math.min(
+					effectiveSpLimit,
+					_spLimit
+						* (
+							((_Tune.SpiderMaxClimbSpeed / (Units.Velocity_mdivs / 3.6)) * (boostNow and 1.45 or 1))
+							/ _Tune.SpeedLimit
+						)
+				)
+			end
 			if noPedalInput and not _TapDriftActive then
 				data.AV.MotorMaxTorque = 0
 				data.AV.AngularVelocity = 0
@@ -2217,15 +2307,23 @@ local function Engine(dt: number)
 					-- Tap-to-Drift (CDT Arcade): Deliver 45% throttle torque to powerslide through the corner!
 					data.AV.MotorMaxTorque = (tqOUT * (_InThrot > 0.1 and (_Tune.TapDriftPowerRatio or 0.45) or 0))
 				end
-				data.AV.AngularVelocity = _spLimit * math.sign(_CGear)
+				data.AV.AngularVelocity = effectiveSpLimit * math.sign(_CGear)
 			else
 				data.AV.MotorMaxTorque = tqOUT * diffMult
-				data.AV.AngularVelocity = _spLimit * math.sign(_CGear)
+				data.AV.AngularVelocity = effectiveSpLimit * math.sign(_CGear)
 			end
 
 			-- Smooth grounded coast slowdown & auto-stop when W/S are released (keeps rolling smoothly to 0 instead of coasting forever)
 			local coastTorque = 0
-			if noPedalInput and not _MidAirActive and not _SpaceHeld and not _TapDriftActive and not _ClPressing and _IsOn then
+			if
+				noPedalInput
+				and not boostNow
+				and not _MidAirActive
+				and not _SpaceHeld
+				and not _TapDriftActive
+				and not _ClPressing
+				and _IsOn
+			then
 				local coastForceBase = (_Tune.CoastDecelForce or 1600) * 9.80665 * Units.Force_N
 				local speedStuds = _Velocity.Magnitude
 				local autoStopSpeed = _Tune.AutoStopSpeedStuds or 3.5
@@ -2275,7 +2373,7 @@ local function Engine(dt: number)
 		local isHardSlide = lateralSpeed > 10 and _Velocity.Magnitude > 15
 		local isBurnoutOrLock = brake > 0.65 and _Velocity.Magnitude > 20
 
-		local isCarUpright = seat.CFrame.UpVector.Y > 0.35
+		local isCarUpright = not _MidAirActive and ((_FrontGroundedCount or 0) + (_RearGroundedCount or 0) >= 1)
 		local rearSmokeActive = isCarUpright
 			and not _MidAirActive
 			and (_RearGroundedCount and _RearGroundedCount >= 1)
@@ -2493,7 +2591,7 @@ end
 local function Mobile()
 	MobileUI.ModeSwitch.Visible = _Velocity.Magnitude < 5
 	MobileUI.ModeSwitch.Text = MobileMode
-	MobileUI.Jump.Visible = MobileUI.ModeSwitch.Visible
+	MobileUI.Jump.Visible = false
 	for _, v in MobileUIChildren do
 		if v:IsA("Frame") then
 			v.Visible = MobileMode == v.Name
@@ -2501,10 +2599,10 @@ local function Mobile()
 	end
 end
 
--- Flip
+-- Flip (only rescues when genuinely stuck upside-down on a surface with 0 wheel adhesion)
 local function Flip()
-	-- Detect Orientation
-	if _FlipDB or (driveSeat.CFrame * CFrame.Angles(math.pi / 2, 0, 0)).LookVector.Y > 0.1 then
+	local stuckUpsideDown = stunt ~= nil and stunt:ShouldAllowAutoFlip() or false
+	if _FlipDB or not stuckUpsideDown then
 		_FlipWait = tick()
 	else
 		if tick() - _FlipWait >= 1.2 then
@@ -2529,332 +2627,53 @@ local function Flip()
 	end
 end
 
--- Mid-Air Control
--- Mid-Air Control (declared at top for Engine smoke gate)
-local takeoffAssistUsed = false
-local allWheelsGroundedSince = 0
-local nextTakeoffAssistAt = 0
-local midAirRays = RaycastParams.new()
-midAirRays.FilterType = Enum.RaycastFilterType.Exclude
-midAirRays.FilterDescendantsInstances = { car }
-
--- Direct yaw steering. Preserve pitch and roll from suspension, collisions, and air control.
-local curbRecoveryUntil = 0
-local arcadeYawCommand = 0
-local arcadeGroundedCount = 0
-local arcadeGroundNormal = Vector3.yAxis
-local rearLeftWheel = car.Wheels:FindFirstChild("RL")
-local rearRightWheel = car.Wheels:FindFirstChild("RR")
+-- ============================================================================
+-- SPIDER WALL-CLIMB, CEILING ADHESION & SKY-SOAR FLIGHT ENGINE (HOKI STUNT)
+-- ============================================================================
+stunt = SpiderFlightEngine.new({
+	car = car,
+	driveSeat = driveSeat,
+	weightBrick = weightBrick,
+	tune = _Tune,
+	units = Units,
+	wheels = Wheels,
+	wheelGrounded = _WheelGrounded,
+	frontLeftWheel = car.Wheels:FindFirstChild("FL") :: BasePart?,
+	frontRightWheel = car.Wheels:FindFirstChild("FR") :: BasePart?,
+	rearLeftWheel = car.Wheels:FindFirstChild("RL") :: BasePart?,
+	rearRightWheel = car.Wheels:FindFirstChild("RR") :: BasePart?,
+	player = player,
+	clearCurbAssist = clearCurbAssistState,
+	getThrottleInput = getEffectiveSeatThrottle,
+	getSteerInput = getEffectiveSeatSteer,
+})
+stuntCam = StuntCamera.new(car, driveSeat, _Tune, Units)
 
 local function ArcadeSteeringYaw(dt: number)
-	if not _Tune.ArcadeSteering or driveSeat.Occupant == nil then
-		return
-	end
-	if _MidAirActive then
-		arcadeYawCommand = 0
-		return -- Air Control owns rotation until the wheels touch down again.
-	end
-
-	local velocity = driveSeat.AssemblyLinearVelocity
-	local horizontalSpeed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
-	local speedKmh = horizontalSpeed / (Units.Velocity_mdivs / 3.6)
-	local speedRatio = math.clamp(speedKmh / math.max(_Tune.ArcadeSteerFullSpeedKmh, 1), 0, 1)
-	local turnRate = _Tune.ArcadeSteerLowSpeedDegPerSec
-		+ (_Tune.ArcadeSteerHighSpeedDegPerSec - _Tune.ArcadeSteerLowSpeedDegPerSec) * speedRatio
-	-- No spin on the spot. Smoothstep brings steering in gently as the car starts rolling.
-	local minMove = math.max(_Tune.ArcadeSteerMinMoveStudsPerSec, 0)
-	local fullMove = math.max(_Tune.ArcadeSteerFullMoveStudsPerSec, minMove + 0.01)
-	local moveRatio = math.clamp((horizontalSpeed - minMove) / (fullMove - minMove), 0, 1)
-	local moveBlend = moveRatio * moveRatio * (3 - 2 * moveRatio)
-
-	local current = driveSeat.AssemblyAngularVelocity
-	local yaw
-	if math.abs(_GSteerC) > 0.01 and moveBlend > 0 then
-		local reverse = velocity:Dot(driveSeat.CFrame.LookVector) < -3 and -1 or 1
-		local targetYaw = -_GSteerC * reverse * math.rad(turnRate) * moveBlend
-		local response = 1 - math.exp(-math.max(_Tune.ArcadeSteerResponse, 0) * dt)
-		arcadeYawCommand += (targetYaw - arcadeYawCommand) * response
-		yaw = arcadeYawCommand
-	else
-		yaw = current.Y * math.exp(-math.max(_Tune.ArcadeSteerReleaseDamping, 0) * dt)
-		arcadeYawCommand = yaw
-	end
-	local angular = Vector3.new(current.X, yaw, current.Z)
-	if arcadeGroundedCount >= 2 then
-		-- Move the chassis center around the rear axle. The nose sweeps into the turn
-		-- while the rear follows, as it would when steering the front wheels.
-		if horizontalSpeed > minMove then
-			local flatVelocity = Vector3.new(velocity.X, 0, velocity.Z)
-			local follow = math.clamp(_Tune.ArcadeVelocityFollow, 0, 1)
-			if math.abs(_GSteerC) > 0.01 then
-				flatVelocity = CFrame.fromAxisAngle(Vector3.yAxis, yaw * dt * follow):VectorToWorldSpace(flatVelocity)
-			end
-			local right = driveSeat.CFrame.RightVector
-			local flatRight = Vector3.new(right.X, 0, right.Z)
-			local forward = driveSeat.CFrame.LookVector
-			local flatForward = Vector3.new(forward.X, 0, forward.Z)
-			if flatRight.Magnitude > 0.01 and flatForward.Magnitude > 0.01 then
-				flatRight = flatRight.Unit
-				flatForward = flatForward.Unit
-				local rearAxle = rearLeftWheel
-					and rearRightWheel
-					and (rearLeftWheel.Position + rearRightWheel.Position) * 0.5
-				local pivotDistance = rearAxle and math.clamp((driveSeat.Position - rearAxle):Dot(flatForward), 0, 20)
-					or 0
-				local pivotVelocity = Vector3.new(0, 1, 0):Cross(flatForward * pivotDistance) * yaw
-				local targetSidewaysSpeed = pivotVelocity:Dot(flatRight)
-				local sideError = flatVelocity:Dot(flatRight) - targetSidewaysSpeed
-				local grip = 1 - math.exp(-math.max(_Tune.ArcadeLateralGrip, 0) * dt)
-				flatVelocity -= flatRight * sideError * grip
-			end
-			driveSeat.AssemblyLinearVelocity = Vector3.new(flatVelocity.X, velocity.Y, flatVelocity.Z)
-		end
-
-		-- Damp roll toward the average contacted ground normal, without flattening ramps.
-		local forward = driveSeat.CFrame.LookVector
-		local rollAxis = Vector3.new(forward.X, 0, forward.Z)
-		if rollAxis.Magnitude > 0.01 then
-			rollAxis = rollAxis.Unit
-			local rollRate = angular:Dot(rollAxis)
-			local rollError = driveSeat.CFrame.UpVector:Cross(arcadeGroundNormal):Dot(rollAxis)
-			local dampedRate = rollRate * math.exp(-math.max(_Tune.ArcadeRollDamping, 0) * dt)
-			local correction = math.clamp(rollError * _Tune.ArcadeRollStability, -3, 3)
-			angular += rollAxis * (dampedRate + correction - rollRate)
-		end
-	end
-	driveSeat.AssemblyAngularVelocity = angular
+	stunt:StepSurfaceSteering(dt, _GSteerC)
 end
 
--- Brief anti-flip recovery after a fast curb climb. Ordinary ramp airtime is untouched.
-local function UpdateCurbRecovery(dt: number)
-	if _Tune.CurbRecoveryEnabled == false then
-		return
-	end
-	local recoveryActive = os.clock() < curbRecoveryUntil
-	if not recoveryActive and arcadeGroundedCount < 1 then
-		return
-	end
-
-	local floorHit =
-		workspace:Raycast(weightBrick.Position, -Vector3.yAxis * (_Tune.CurbRecoveryGroundProbe or 5), midAirRays)
-	if not floorHit or floorHit.Normal.Y < 0.45 then
-		return
-	end
-
-	local carCFrame = driveSeat.CFrame
-	local up = carCFrame.UpVector
-	local groundNormal = floorHit.Normal
-	if up:Dot(groundNormal) < 0.15 then
-		return
-	end
-
-	local forward = carCFrame.LookVector
-	local right = carCFrame.RightVector
-	forward = Vector3.new(forward.X, 0, forward.Z)
-	right = Vector3.new(right.X, 0, right.Z)
-	if forward.Magnitude < 0.1 or right.Magnitude < 0.1 then
-		return
-	end
-	forward = forward.Unit
-	right = right.Unit
-
-	local correctionAxis = up:Cross(groundNormal)
-	local rollError = correctionAxis:Dot(forward)
-	local pitchError = correctionAxis:Dot(right)
-	local current = driveSeat.AssemblyAngularVelocity
-	local rollRate = current:Dot(forward)
-	local pitchRate = current:Dot(right)
-	if not recoveryActive then
-		local velocity = driveSeat.AssemblyLinearVelocity
-		local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
-		local riskyRoll = math.abs(rollRate) >= 1.8 or math.abs(rollError) >= math.sin(math.rad(20))
-		local riskyPitch = math.abs(pitchRate) >= 2.5 and math.abs(pitchError) >= math.sin(math.rad(25))
-		if speed < (_Tune.CurbRecoveryMinimumSpeed or 35) or not (riskyRoll or riskyPitch) then
-			return
-		end
-		curbRecoveryUntil = os.clock() + (_Tune.CurbRecoveryDuration or 0.5)
-	end
-	if
-		math.abs(rollError) < math.sin(math.rad(8))
-		and math.abs(pitchError) < math.sin(math.rad(30))
-		and math.abs(rollRate) < 1.2
-		and math.abs(pitchRate) < 1.2
-	then
-		return
-	end
-
-	local maxRate = math.max(_Tune.CurbRecoveryMaxAngularSpeed or 3, 0)
-	local rollTarget = math.clamp(rollError * (_Tune.CurbRecoveryRollStrength or 8), -maxRate, maxRate)
-	local pitchExcess = math.sign(pitchError) * math.max(math.abs(pitchError) - math.sin(math.rad(25)), 0)
-	local pitchTarget = math.clamp(pitchExcess * (_Tune.CurbRecoveryPitchStrength or 4), -maxRate, maxRate)
-	local blend = 1 - math.exp(-math.max(_Tune.CurbRecoveryDamping or 16, 0) * dt)
-	driveSeat.AssemblyAngularVelocity = current
-		+ forward * (rollTarget - rollRate) * blend
-		+ right * (pitchTarget - pitchRate) * blend
+local function UpdateCurbRecovery(_dt: number)
+	-- Surface-normal alignment in SpiderFlightEngine keeps the chassis stable across flat ground, slopes, and walls.
 end
 
 local function MidAirControl(dt: number)
-	local groundedCount = 0
-	local frontGroundedCount = 0
-	local rearGroundedCount = 0
-	local frontWheelCount = 0
-	local rearWheelCount = 0
-	local frontGroundHeight = 0
-	local rearGroundHeight = 0
-	local frontRampContact = false
-	local groundNormalSum = Vector3.zero
-	local groundNormalCount = 0
-	midAirRays.FilterDescendantsInstances = { car, player.Character }
-	for wheel, wheelData in pairs(Wheels) do
-		if wheelData.isFront then
-			frontWheelCount += 1
-		else
-			rearWheelCount += 1
-		end
-		local wheelRadius = math.max(wheel.Size.Y, wheel.Size.Z) * 0.5
-		local carUp = driveSeat.CFrame.UpVector
-		local result = (carUp.Y > 0.35) and workspace:Raycast(wheel.Position, -carUp * (wheelRadius + 0.28), midAirRays)
-			or nil
-		_WheelGrounded[wheelData.Name] = (result ~= nil)
-		if result then
-			groundedCount += 1
-			if result.Normal.Y >= 0.35 then
-				groundNormalSum += result.Normal
-				groundNormalCount += 1
-			end
-			if wheelData.isFront then
-				frontGroundedCount += 1
-				frontGroundHeight += result.Position.Y
-				if result.Normal.Y >= 0.25 and result.Normal.Y < 0.985 then
-					frontRampContact = true
-				end
-			else
-				rearGroundedCount += 1
-				rearGroundHeight += result.Position.Y
-			end
-		end
-	end
-
-	_FrontGroundedCount = frontGroundedCount
-	_RearGroundedCount = rearGroundedCount
-	arcadeGroundedCount = groundNormalCount
-	arcadeGroundNormal = groundNormalCount > 0 and groundNormalSum.Unit or Vector3.yAxis
-	local wasAirborne = _MidAirActive
-	_MidAirActive = groundedCount < 2
+	local midAir, fCount, rCount = stunt:Step(dt, {
+		iThrot = _IThrot,
+		gThrot = _GThrot,
+		iBrake = _IBrake,
+		gBrake = _GBrake,
+		gSteerT = _GSteerT,
+		spaceHeld = _SpaceHeld,
+		isOn = _IsOn,
+		stepClimbActive = car:GetAttribute("SconStepClimbActive") == true,
+	})
+	_MidAirActive = midAir
+	_FrontGroundedCount = fCount
+	_RearGroundedCount = rCount
 	if _MidAirActive and _Tune.ArcadeSteering then
 		Steering(dt)
-		if not wasAirborne then
-			local spin = driveSeat.AssemblyAngularVelocity
-			driveSeat.AssemblyAngularVelocity = Vector3.new(spin.X, 0, spin.Z)
-		end
 	end
-	local totalWheelCount = frontWheelCount + rearWheelCount
-	local frontAverageGroundY = frontGroundedCount > 0 and frontGroundHeight / frontGroundedCount or 0
-	local rearAverageGroundY = rearGroundedCount > 0 and rearGroundHeight / rearGroundedCount or 0
-	local rampTakeoff = frontRampContact
-		and frontGroundedCount > 0
-		and rearGroundedCount > 0
-		and frontAverageGroundY - rearAverageGroundY >= 0.25
-		and os.clock() >= nextTakeoffAssistAt
-	local now = os.clock()
-	if totalWheelCount > 0 and groundedCount == totalWheelCount then
-		if not takeoffAssistUsed or allWheelsGroundedSince == 0 then
-			allWheelsGroundedSince = now
-		elseif now - allWheelsGroundedSince >= 0.35 then
-			takeoffAssistUsed = false
-		end
-	else
-		allWheelsGroundedSince = 0
-	end
-
-	-- Trigger controlled ramp-jump boost ONLY on real upward jump ramps (never on flat curb climbs or step drops)
-	local climbingStep = car:GetAttribute("SconStepClimbActive") == true
-	local nosePitchedUpOnRamp = driveSeat.CFrame.LookVector.Y >= 0.10
-	local frontLipClearOnRamp = frontWheelCount > 0 and frontGroundedCount == 0 and rearGroundedCount > 0 and nosePitchedUpOnRamp
-	local steepRampCrest = rampTakeoff and nosePitchedUpOnRamp and (frontAverageGroundY - rearAverageGroundY >= 0.40) and weightBrick.AssemblyLinearVelocity.Y >= 4.0
-	if (frontLipClearOnRamp or steepRampCrest) and not climbingStep and not takeoffAssistUsed and os.clock() >= nextTakeoffAssistAt then
-		takeoffAssistUsed = true
-		allWheelsGroundedSince = 0
-		nextTakeoffAssistAt = now + 1.0
-		local assemblyVelocity = weightBrick.AssemblyLinearVelocity
-		local horizontalSpeed = Vector3.new(assemblyVelocity.X, 0, assemblyVelocity.Z).Magnitude
-		local currentVerticalSpeed = assemblyVelocity.Y
-		local minLaunchSpeed = (_Tune.AirLaunchMinimumSpeed and _Tune.AirLaunchMinimumSpeed > 0)
-				and _Tune.AirLaunchMinimumSpeed
-			or 48
-		-- Respect explicit 0 values; only fall back when the tune key is unset.
-		local baseBoost = 5.5
-		if _Tune.AirLaunchBaseBoost ~= nil then
-			baseBoost = _Tune.AirLaunchBaseBoost
-		end
-		local speedScale = 0.08
-		if _Tune.AirLaunchSpeedScale ~= nil then
-			speedScale = _Tune.AirLaunchSpeedScale
-		end
-		local maxVertSpeed = (_Tune.AirLaunchMaxVerticalSpeed and _Tune.AirLaunchMaxVerticalSpeed > 0)
-				and _Tune.AirLaunchMaxVerticalSpeed
-			or 16.0
-		local requestedBoost = math.min(baseBoost + horizontalSpeed * speedScale, maxVertSpeed)
-		if requestedBoost > 0 and horizontalSpeed >= minLaunchSpeed and currentVerticalSpeed > -2 then
-			local targetVerticalSpeed = math.min(maxVertSpeed, math.max(0, currentVerticalSpeed) + requestedBoost)
-			local verticalBoost = math.max(0, targetVerticalSpeed - currentVerticalSpeed)
-			if verticalBoost > 0 then
-				local fwdDir = Vector3.new(driveSeat.CFrame.LookVector.X, 0, driveSeat.CFrame.LookVector.Z)
-				fwdDir = fwdDir.Magnitude > 0.01 and fwdDir.Unit or driveSeat.CFrame.LookVector
-				local maxFwdBoost = (_Tune.AirLaunchForwardBoostMax and _Tune.AirLaunchForwardBoostMax > 0) and _Tune.AirLaunchForwardBoostMax or 10.0
-				local fwdBoost = math.clamp(horizontalSpeed * 0.10, 0, maxFwdBoost)
-				local launchMass = getTotalVehicleMass()
-				weightBrick:ApplyImpulse((Vector3.yAxis * verticalBoost + fwdDir * fwdBoost) * launchMass)
-				local launchReason = frontLipClearOnRamp and "ramp lip takeoff" or "steep ramp crest"
-				print(
-					string.format(
-						"[PiggyCar HeavyGripFloat][AirLaunch] %s +up=%.1f +fwd=%.1f at %.1f studs/s",
-						launchReason,
-						verticalBoost,
-						fwdBoost,
-						horizontalSpeed
-					)
-				)
-			end
-		end
-	end
-
-	if groundedCount >= 2 then
-		_MidAirActive = false
-		car:SetAttribute("PiggyCarAirborneWeightReduced", false)
-		return
-	end
-
-	_MidAirActive = true
-	car:SetAttribute("PiggyCarAirborneWeightReduced", true)
-	-- Clear curbAssistForce in air to prevent artificial antigravity lift (no flying off the map)
-	clearCurbAssistState()
-
-	-- Pitch & Roll Orientation Control (level sleek glide on W so car flies farther without nose-diving)
-	-- W: Gentle level/gliding angle (+1.5 deg)
-	-- S: Nose Up (+14 deg) for backflip / extra air attitude
-	-- A / D: Yaw & slight Bank (roll) to align landing direction with road
-	-- Spacebar + A/D: Stunt Barrel Roll
-	local currentPitch = math.asin(math.clamp(driveSeat.CFrame.LookVector.Y, -1, 1))
-	local targetPitch = 0
-	if _GBrake > 0.1 then
-		targetPitch = math.rad(14)
-	elseif _GThrot > 0.1 then
-		targetPitch = math.rad(1.5)
-	end
-
-	local pitchCmd = math.clamp((targetPitch - currentPitch) * 3.0, -1.2, 1.2)
-	local rollInput = _GSteerT
-
-	local currentRoll = math.asin(math.clamp(driveSeat.CFrame.RightVector.Y, -1, 1))
-	local rollRateCmd = _SpaceHeld and (-rollInput * 2.8)
-		or math.clamp((math.rad(rollInput * 12) - currentRoll) * 3.0, -1.6, 1.6)
-	local yawRateCmd = (not _SpaceHeld) and (-rollInput * 1.2) or 0
-	local localAngVel = Vector3.new(pitchCmd * 1.5, yawRateCmd, rollRateCmd)
-	local worldAngVel = driveSeat.CFrame:VectorToWorldSpace(localAngVel)
-
-	local lerpFactor = math.min(dt * 5, 1)
-	driveSeat.AssemblyAngularVelocity = driveSeat.AssemblyAngularVelocity:Lerp(worldAngVel, lerpFactor)
 end
 
 -- Last Input Type
@@ -2994,7 +2813,7 @@ end
 local fixedDeltaTime = 1 / 60 -- Fixed to avoid rewriting old code causing different behaviours at different FPS
 local accumulatedSimTime = 0
 
-RunService.PreSimulation:Connect(function(deltaTimeSim: number)
+local preSimConn = RunService.PreSimulation:Connect(function(deltaTimeSim: number)
 	accumulatedSimTime += deltaTimeSim
 	while accumulatedSimTime >= fixedDeltaTime do
 		accumulatedSimTime -= fixedDeltaTime
@@ -3003,8 +2822,11 @@ RunService.PreSimulation:Connect(function(deltaTimeSim: number)
 end)
 
 local function SlowRuntimeLoop()
-	while true do
+	while script.Parent and car.Parent do
 		local _deltaTime = task.wait(1 / 8)
+		if not script.Parent or not car.Parent then
+			break
+		end
 
 		-- Mobile UI
 		if _Tune.Mobile and LastInputWasMobile then
@@ -3026,7 +2848,7 @@ local function SlowRuntimeLoop()
 	end
 end
 
-task.spawn(SlowRuntimeLoop)
+local slowLoopThread = task.spawn(SlowRuntimeLoop)
 
 -- ============================================================================
 -- SINK SPACEBAR HANDBRAKE & PREVENT EJECT JUMPING BUG
@@ -3129,6 +2951,29 @@ ContextActionService:BindActionAtPriority("HokiTeslaHorn", function(_, state)
 	return Enum.ContextActionResult.Pass
 end, false, Enum.ContextActionPriority.High.Value + 1400, Enum.KeyCode.H)
 
+-- 3c. [LeftShift / RightShift] Rocket Boost & Sky-Soar Flight + [Q] Stunt Jump / Wall-Jump
+ContextActionService:BindActionAtPriority(
+	"HokiBoostFlight",
+	function(_, state)
+		if state == Enum.UserInputState.Begin then
+			if UserInputService:GetFocusedTextBox() then
+				return Enum.ContextActionResult.Pass
+			end
+			stunt:SetBoostHeld(true)
+			return Enum.ContextActionResult.Pass
+		elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
+			stunt:SetBoostHeld(false)
+			return Enum.ContextActionResult.Pass
+		end
+		return Enum.ContextActionResult.Pass
+	end,
+	false,
+	Enum.ContextActionPriority.High.Value + 1450,
+	Enum.KeyCode.LeftShift,
+	Enum.KeyCode.RightShift,
+	Enum.KeyCode.ButtonX
+)
+
 -- 4. Mobile Exit Button Binding
 local mobile = script.Parent:FindFirstChild("Mobile")
 if mobile then
@@ -3142,6 +2987,12 @@ end
 
 -- 5. Restore Jumping, stop transient vehicle audio, and unbind actions on exit
 script.Destroying:Connect(function()
+	preSimConn:Disconnect()
+	pcall(task.cancel, slowLoopThread)
+	if stunt then
+		stunt:Destroy()
+	end
+
 	setPromptsEnabled(true)
 	if hornHeld then
 		hornHeld = false
@@ -3156,7 +3007,5 @@ script.Destroying:Connect(function()
 	if humanoid then
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 	end
-	ContextActionService:UnbindAction("HokiSpacebarHandbrakeSink")
-	ContextActionService:UnbindAction("HokiDriverCleanExit")
-	ContextActionService:UnbindAction("HokiTeslaHorn")
+	unbindDriverControls()
 end)
