@@ -248,7 +248,13 @@ function EvSoundMix.computeTargets(
 	}
 end
 
-local function stepLoopChannel(channel: EvChannel, targetVol: number, targetPitch: number, volBlend: number, pitchBlend: number)
+local function stepLoopChannel(
+	channel: EvChannel,
+	targetVol: number,
+	targetPitch: number,
+	volBlend: number,
+	pitchBlend: number
+)
 	local s = channel.sound
 	s.Volume += (targetVol - s.Volume) * volBlend
 	s.PlaybackSpeed += (targetPitch - s.PlaybackSpeed) * pitchBlend

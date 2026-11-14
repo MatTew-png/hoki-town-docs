@@ -210,6 +210,8 @@ local function symmetrizeAxleGeometry(leftName: string, rightName: string)
 	)
 	leftWheel.Size = targetSize
 	rightWheel.Size = targetSize
+	leftWheel.Transparency = 1
+	rightWheel.Transparency = 1
 
 	-- Mirror rear/front spring attachments across car centerline so both sides carry equal static load
 	local leftSG = leftWheel:FindFirstChild("SuspensionGeometry")
@@ -748,46 +750,6 @@ for _, v in Drive do
 	end
 end
 
--- [[Anti-Roll SwayBar Setup]]
-local function setupSwayBar(leftWheel, rightWheel, swayBarStiffness)
-	if not leftWheel or not rightWheel or not swayBarStiffness or swayBarStiffness <= 0 then
-		return
-	end
-	local leftBase = leftWheel:FindFirstChild("Base")
-	local rightBase = rightWheel:FindFirstChild("Base")
-	if not leftBase or not rightBase then
-		return
-	end
-	local att0 = leftBase:FindFirstChild("SwayBarAttachment")
-	if not att0 then
-		att0 = Instance.new("Attachment")
-		att0.Name = "SwayBarAttachment"
-		att0.Parent = leftBase
-	end
-	local att1 = rightBase:FindFirstChild("SwayBarAttachment")
-	if not att1 then
-		att1 = Instance.new("Attachment")
-		att1.Name = "SwayBarAttachment"
-		att1.Parent = rightBase
-	end
-	local swayBar = leftWheel:FindFirstChild("SwayBar")
-	if not swayBar then
-		swayBar = Instance.new("SpringConstraint")
-		swayBar.Name = "SwayBar"
-		swayBar.Parent = leftWheel
-	end
-	swayBar.Attachment0 = att0
-	swayBar.Attachment1 = att1
-	swayBar.Damping = 20
-	swayBar.FreeLength = math.max((att0.WorldPosition - att1.WorldPosition).Magnitude, 0.1)
-	swayBar.Stiffness = swayBarStiffness * 9806.65 * Units.Stiffness_Ndivm
-	swayBar.LimitsEnabled = false
-	swayBar.Visible = false
-end
-
-setupSwayBar(car.Wheels:FindFirstChild("FL"), car.Wheels:FindFirstChild("FR"), Tune.FSwayBar)
-setupSwayBar(car.Wheels:FindFirstChild("RL"), car.Wheels:FindFirstChild("RR"), Tune.RSwayBar)
-
 --[[Vehicle Weight]]
 task.wait()
 
@@ -985,7 +947,7 @@ local hitboxSpecs = {
 	},
 }
 
-local hitboxPhys = PhysicalProperties.new(0.01, 0.05, 0, 100, 100)
+local hitboxPhys = PhysicalProperties.new(0.01, 0.0, 0, 100, 100)
 local hitboxParts = {} :: { BasePart }
 for _, spec in ipairs(hitboxSpecs) do
 	local box = Instance.new(spec.kind) :: BasePart
@@ -1019,11 +981,12 @@ for _, hb in ipairs(hitboxParts) do
 	seatNC.Part0 = hb
 	seatNC.Part1 = car.DriveSeat
 	seatNC.Parent = hb
-	for _, wp in ipairs(wheelParts) do
-		local nc = Instance.new("NoCollisionConstraint")
-		nc.Part0 = hb
-		nc.Part1 = wp
-		nc.Parent = hb
+
+	for _, w in ipairs(wheelParts) do
+		local wheelNC = Instance.new("NoCollisionConstraint")
+		wheelNC.Part0 = hb
+		wheelNC.Part1 = w
+		wheelNC.Parent = hb
 	end
 end
 
@@ -1364,14 +1327,8 @@ seat.ChildRemoved:Connect(function(child: Instance)
 
 		-- Return physics ownership to the server as soon as the driver leaves.
 		setVehicleNetworkOwner(nil)
-		car:SetAttribute("SconWallClimbActive", false)
-		car:SetAttribute("SconFlightBoostActive", false)
-		local weightBallast = car:FindFirstChild("Body") and car.Body:FindFirstChild("#Weight")
-		local clientForce = weightBallast and weightBallast:FindFirstChild("SconPhysicsForce")
-		if clientForce and clientForce:IsA("VectorForce") then
-			clientForce.Force = Vector3.zero
-			clientForce.Enabled = false
-		end
+		car:SetAttribute("SconWallClimbActive", nil)
+		car:SetAttribute("SconFlightBoostActive", nil)
 
 		-- Clear replicated controls and persist the parking-brake state.
 		local interfaceValues = script.Parent["A-Chassis Interface"].Values
@@ -1458,8 +1415,8 @@ end
 local ballast = car.Body:FindFirstChild("#Weight")
 if ballast and #Wheels > 0 then
 	local AIRBORNE_DENSITY_SCALE = Tune.AirborneDensityScale or 1
-	local AIRBORNE_EFFECTIVE_GRAVITY = Tune.AirborneGravity or 12
-	local GROUND_CLEARANCE = 0.12
+	local AIRBORNE_EFFECTIVE_GRAVITY = Tune.AirborneGravity or workspace.Gravity
+	local GROUND_CLEARANCE = 0.08
 	local curbAttachment = ballast:FindFirstChild("CurbAssistAttachment") or Instance.new("Attachment")
 	curbAttachment.Name = "CurbAssistAttachment"
 	curbAttachment.Parent = ballast
@@ -1488,22 +1445,22 @@ if ballast and #Wheels > 0 then
 				local pe = att:FindFirstChild("TireSmoke") or Instance.new("ParticleEmitter")
 				pe.Name = "TireSmoke"
 				pe.Texture = "rbxasset://textures/particles/smoke_main.dds"
-				pe.Color = ColorSequence.new(Color3.fromRGB(240, 240, 245), Color3.fromRGB(200, 200, 210))
+				pe.Color = ColorSequence.new(Color3.fromRGB(95, 98, 105), Color3.fromRGB(55, 58, 65))
 				pe.Size = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 0.9),
-					NumberSequenceKeypoint.new(0.35, 2.8),
-					NumberSequenceKeypoint.new(1.0, 5.2),
+					NumberSequenceKeypoint.new(0, 1.2),
+					NumberSequenceKeypoint.new(0.35, 3.6),
+					NumberSequenceKeypoint.new(1.0, 6.5),
 				})
 				pe.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 0.35),
-					NumberSequenceKeypoint.new(0.6, 0.65),
+					NumberSequenceKeypoint.new(0, 0.18),
+					NumberSequenceKeypoint.new(0.6, 0.48),
 					NumberSequenceKeypoint.new(1.0, 1.0),
 				})
-				pe.Lifetime = NumberRange.new(0.6, 1.2)
-				pe.Speed = NumberRange.new(1.2, 2.5)
-				pe.Drag = 3.5
-				pe.Acceleration = Vector3.new(0, 1.2, 0)
-				pe.SpreadAngle = Vector2.new(20, 20)
+				pe.Lifetime = NumberRange.new(0.65, 1.35)
+				pe.Speed = NumberRange.new(1.8, 3.8)
+				pe.Drag = 3.2
+				pe.Acceleration = Vector3.new(0, 1.6, 0)
+				pe.SpreadAngle = Vector2.new(28, 28)
 				pe.Orientation = Enum.ParticleOrientation.FacingCamera
 				pe.EmissionDirection = Enum.NormalId.Top
 				pe.Enabled = false
@@ -1515,8 +1472,6 @@ if ballast and #Wheels > 0 then
 	local baseProperties = ballast.CustomPhysicalProperties or PhysicalProperties.new(0.7, 0.3, 0.5)
 	local airborne = false
 	local airborneChecks = 0
-	local groundedChecks = 0
-	local GROUNDED_CONFIRMATION_CHECKS = 2
 	local hasReportedInitialRaycast = false
 	local groundParams = RaycastParams.new()
 	groundParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -1538,21 +1493,41 @@ if ballast and #Wheels > 0 then
 	local nonBallastMass = math.max(cachedTotalMass - ballast.Mass, 0)
 
 	local gravityCompensation = ballast:FindFirstChild("#GRAVCOMP")
+	local staleSpiderForce = ballast:FindFirstChild("SconPhysicsForce")
+	if staleSpiderForce then
+		staleSpiderForce:Destroy()
+	end
+	local staleSpiderAtt = ballast:FindFirstChild("SconPhysicsAttachment")
+	if staleSpiderAtt then
+		staleSpiderAtt:Destroy()
+	end
+	car:SetAttribute("SconWallClimbActive", nil)
+	car:SetAttribute("SconFlightBoostActive", nil)
 
 	--[[ <summary>
-	Keeps downward acceleration strongly positive (>= 95 studs/s^2) while gently extending jump glide only when all 4 wheels leave the ground.
+	Restores grounded GravComp on ballast or applies gentle airborne gravity when all wheels leave the ground.
 	</summary> ]]
 	local function updateGravityCompensation(currentGroundHits: number?)
 		if not gravityCompensation or not gravityCompensation:IsA("VectorForce") then
 			return
 		end
 
-		local grounded = (currentGroundHits ~= nil and currentGroundHits > 0)
+		local grounded = (currentGroundHits ~= nil and (airborne and currentGroundHits >= 2 or currentGroundHits > 0))
 		local climbingStep = car:GetAttribute("SconStepClimbActive") == true
-		local risingTooFast = ballast.AssemblyLinearVelocity.Y >= 45
-		if seat.Occupant ~= nil or not airborne or grounded or climbingStep or risingTooFast then
-			gravityCompensation.Enabled = false
-			gravityCompensation.Force = Vector3.zero
+		local risingTooFast = ballast.AssemblyLinearVelocity.Y >= 120
+		gravityCompensation.Attachment0 = gravityCompensation.Attachment0 or curbAttachment
+		gravityCompensation.RelativeTo = Enum.ActuatorRelativeTo.World
+		gravityCompensation.ApplyAtCenterOfMass = true
+
+		if not airborne or grounded or climbingStep or risingTooFast then
+			local groundGrav = Tune.GravComp or 0
+			if groundGrav > 0 then
+				gravityCompensation.Force = Vector3.new(0, ballast.Mass * (workspace.Gravity - groundGrav), 0)
+				gravityCompensation.Enabled = true
+			else
+				gravityCompensation.Force = Vector3.zero
+				gravityCompensation.Enabled = false
+			end
 			return
 		end
 
@@ -1563,11 +1538,8 @@ if ballast and #Wheels > 0 then
 		local desiredAirWeight = currentTotalMass * targetAirGravity
 		local liftForceY = math.clamp(totalGroundWeight - desiredAirWeight, 0, currentTotalMass * 175)
 
-		gravityCompensation.Attachment0 = gravityCompensation.Attachment0 or curbAttachment
-		gravityCompensation.RelativeTo = Enum.ActuatorRelativeTo.World
-		gravityCompensation.ApplyAtCenterOfMass = true
 		gravityCompensation.Force = Vector3.yAxis * liftForceY
-		gravityCompensation.Enabled = liftForceY > 0
+		gravityCompensation.Enabled = liftForceY > 0.01
 	end
 
 	local function setAirborne(nextAirborne: boolean, currentGroundHits: number?)
@@ -1599,22 +1571,14 @@ if ballast and #Wheels > 0 then
 			airborneConnection:Disconnect()
 			return
 		end
-		-- While a driver is seated, Drive.client.luau owns surface adhesion and flight forces directly.
-		if seat.Occupant ~= nil then
-			if gravityCompensation and gravityCompensation:IsA("VectorForce") and gravityCompensation.Enabled then
-				gravityCompensation.Enabled = false
-				gravityCompensation.Force = Vector3.zero
-			end
-			return
-		end
 
 		local groundHitCount = 0
 		local physicalGroundCount = 0
 		local nearestGroundDistance = math.huge
-		local vehicleDown = -car.DriveSeat.CFrame.UpVector
-		local probeDirections = { -Vector3.yAxis }
+		local carUp = car.DriveSeat.CFrame.UpVector
+		local vehicleDown = -carUp
+		local probeDirections = { -Vector3.yAxis, vehicleDown }
 		if vehicleDown.Y < -0.1 then
-			table.insert(probeDirections, vehicleDown)
 			local middleDown = vehicleDown - Vector3.yAxis
 			if middleDown.Magnitude > 0.1 then
 				table.insert(probeDirections, middleDown.Unit)
@@ -1633,7 +1597,10 @@ if ballast and #Wheels > 0 then
 					end)
 					if ok then
 						local fromSurface = wheel.Position - surfacePoint
-						if fromSurface.Magnitude > 0.05 and fromSurface.Y / fromSurface.Magnitude > 0.05 then
+						if
+							fromSurface.Magnitude > 0.05
+							and (fromSurface.Y / fromSurface.Magnitude > 0.05 or fromSurface.Unit:Dot(carUp) > 0.35)
+						then
 							wheelGrounded = true
 							physicalGroundCount += 1
 							nearestGroundDistance = math.min(nearestGroundDistance, fromSurface.Magnitude)
@@ -1647,7 +1614,7 @@ if ballast and #Wheels > 0 then
 			if not wheelGrounded then
 				for _, direction in ipairs(probeDirections) do
 					local hit = workspace:Raycast(wheel.Position, direction * rayLength, groundParams)
-					if hit and hit.Normal.Y > 0.05 then
+					if hit and (hit.Normal.Y > 0.05 or hit.Normal:Dot(carUp) > 0.35) then
 						wheelGrounded = true
 						nearestGroundDistance = math.min(nearestGroundDistance, hit.Distance)
 						break
@@ -1672,28 +1639,28 @@ if ballast and #Wheels > 0 then
 			)
 		end
 
-		if groundHitCount < 2 then
-			-- Only go airborne when fewer than 2 wheels have ground support (prevents curb/step climbing from triggering mid-air mode).
+		if groundHitCount >= 3 then
+			airborneChecks = math.max(0, airborneChecks - 1)
+		elseif groundHitCount <= 1 then
 			airborneChecks = math.min(REQUIRED_AIRBORNE_CHECKS, airborneChecks + 1)
-			groundedChecks = 0
+		elseif airborne then
+			airborneChecks = REQUIRED_AIRBORNE_CHECKS
 		else
 			airborneChecks = 0
-			groundedChecks = math.min(GROUNDED_CONFIRMATION_CHECKS, groundedChecks + 1)
 		end
-		if airborneChecks >= REQUIRED_AIRBORNE_CHECKS and not airborne then
+		if airborneChecks == REQUIRED_AIRBORNE_CHECKS and not airborne then
 			setAirborne(true, groundHitCount)
 			print(
 				string.format(
-					"[PiggyCar HeavyGripFloat Air][Ground] AIRBORNE: %d/%d wheels grounded (%d physical contacts) for %d checks; gravity=%.1f; nearestHit=%s",
+					"[PiggyCar HeavyGripFloat Air][Ground] AIRBORNE: %d/%d wheels grounded (%d physical contacts); gravity=%.1f; nearestHit=%s",
 					groundHitCount,
 					#Wheels,
 					physicalGroundCount,
-					airborneChecks,
-					math.max(AIRBORNE_EFFECTIVE_GRAVITY, 95),
+					math.max(AIRBORNE_EFFECTIVE_GRAVITY, 10),
 					nearestGroundDistance == math.huge and "none" or string.format("%.2f studs", nearestGroundDistance)
 				)
 			)
-		elseif groundedChecks >= GROUNDED_CONFIRMATION_CHECKS and airborne then
+		elseif airborneChecks == 0 and airborne then
 			setAirborne(false, groundHitCount)
 			print(
 				string.format(

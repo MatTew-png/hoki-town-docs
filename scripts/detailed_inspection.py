@@ -1,45 +1,37 @@
 import bpy
-import bmesh
-from mathutils import Vector
+import os
+import math
 
-BLEND_PATH = r"C:\Users\_newgen\Downloads\Tesla_Roadster_Raycast_Master_2026.blend"
-bpy.ops.wm.open_mainfile(filepath=BLEND_PATH)
+glb_path = os.path.abspath('assets/models/kairo_neko_ev/raw_download/es11_full.glb')
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bpy.ops.import_scene.gltf(filepath=glb_path)
 
-bp = bpy.data.objects.get("Body_Paint")
-bg = bpy.data.objects.get("Body_Glass")
-cu = bpy.data.objects.get("Chassis_Underbody")
+delete_names = [
+    'Mesh_180-mesh', 'Mesh_231-mesh', 'Plane_026-mesh',
+    '_9_trunk_glass-mesh_3', '_9_trunk_glass-mesh_7', '_9_trunk_glass-mesh_8', # GT wing / spoiler parts
+    '_1_car_body_004-mesh_3', # GT wing brackets
+    '_5_hub_black_metal_001-mesh', '_5_hub_black_metal_001-mesh_1', # floating spare wheel at origin
+    '_5_hub_black_metal_001-mesh_2', '_5_hub_black_metal_001-mesh_3',
+    '_5_hub_black_metal_002-mesh'
+]
 
-print("=== 1. QUARTER WINDOW FACES IN BODY_GLASS ===")
-bm_bg = bmesh.new()
-bm_bg.from_mesh(bg.data)
-bm_bg.faces.ensure_lookup_table()
-bm_bg.edges.ensure_lookup_table()
+for o in list(bpy.context.scene.objects):
+    if o.name.startswith('Untitled') or o.name in delete_names:
+        bpy.data.objects.remove(o, do_unlink=True)
 
-# Look at left quarter window: X < -1.8, -3.8 < Y < -1.6
-qw_faces = [f for f in bm_bg.faces if any(v.co.x < -1.8 and -3.8 < v.co.y < -1.6 for v in f.verts)]
-for f in qw_faces:
-    print(f"  Face {f.index}: {[v.index for v in f.verts]} | coords={[f'({v.co.x:.2f},{v.co.y:.2f},{v.co.z:.2f})' for v in f.verts]}")
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+bpy.ops.transform.rotate(value=math.radians(-90), orient_axis='X')
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+bpy.ops.transform.rotate(value=math.pi, orient_axis='Z')
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-print("\n=== 2. B-PILLAR INTERSECTIONS IN CHASSIS_UNDERBODY ===")
-bm_cu = bmesh.new()
-bm_cu.from_mesh(cu.data)
-bp_faces = [f for f in bm_cu.faces if any(-1.9 < v.co.y < -1.3 and v.co.z > 2.9 and abs(v.co.x) > 1.9 for v in f.verts)]
-print(f"Total CU faces in B-pillar zone: {len(bp_faces)}")
-for f in bp_faces[:10]:
-    print(f"  CU Face {f.index}: {[f'({v.co.x:.2f},{v.co.y:.2f},{v.co.z:.2f})' for v in f.verts]}")
+remaining = [o for o in bpy.context.scene.objects if o.type == 'MESH']
+print(f"Total remaining mesh objects: {len(remaining)}")
 
-print("\n=== 3. FRONT HOOD HOLE (IMAGE 3) ===")
-# Find boundary loops in Body_Paint on hood: 5.5 < Y < 7.2, 1.5 < Z < 2.5
-bm_bp = bmesh.new()
-bm_bp.from_mesh(bp.data)
-hood_b_edges = [e for e in bm_bp.edges if len(e.link_faces) == 1 and any(5.5 < v.co.y < 7.2 and 1.5 < v.co.z < 2.5 and v.co.x < -1.0 for v in e.verts)]
-print(f"Left hood hole boundary edges: {len(hood_b_edges)}")
-for e in hood_b_edges:
-    print(f"  e({e.verts[0].index}, {e.verts[1].index}): ({e.verts[0].co.x:.3f}, {e.verts[0].co.y:.3f}, {e.verts[0].co.z:.3f}) -> ({e.verts[1].co.x:.3f}, {e.verts[1].co.y:.3f}, {e.verts[1].co.z:.3f})")
-
-print("\n=== 4. FENDER CONTOUR AND WHEEL FITMENT ===")
-# Let's inspect the fender flare X coordinates at front wheel (Y=4.64) and rear wheel (Y=-4.90)
-fw_arch = [v.co.x for v in bm_bp.verts if 4.2 < v.co.y < 5.0 and 1.0 < v.co.z < 2.3 and v.co.x < -2.0]
-rw_arch = [v.co.x for v in bm_bp.verts if -5.3 < v.co.y < -4.5 and 1.0 < v.co.z < 2.3 and v.co.x < -2.0]
-print(f"Front Wheel Arch X range: [{min(fw_arch):.3f}, {max(fw_arch):.3f}]")
-print(f"Rear Wheel Arch X range: [{min(rw_arch):.3f}, {max(rw_arch):.3f}]")
+# Print detailed categorization candidate list
+for o in sorted(remaining, key=lambda x: x.name):
+    zs = [v.co.z for v in o.data.vertices]
+    ys = [v.co.y for v in o.data.vertices]
+    xs = [v.co.x for v in o.data.vertices]
+    print(f"{o.name:36s} | Polys: {len(o.data.polygons):5d} | X:[{min(xs):.2f}, {max(xs):.2f}] | Y:[{min(ys):.2f}, {max(ys):.2f}] | Z:[{min(zs):.2f}, {max(zs):.2f}]")

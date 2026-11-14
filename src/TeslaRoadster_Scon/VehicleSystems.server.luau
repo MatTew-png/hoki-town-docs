@@ -16,6 +16,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local car = script.Parent :: Model
@@ -213,6 +214,86 @@ if not engineFire then
 	engineFire.EmissionDirection = Enum.NormalId.Top
 	engineFire.Enabled = false
 	engineFire.Parent = engineBayAtt
+end
+
+-- Impact Collision Sparks & Flash VFX Attachment & Particles
+local impactVFXAtt = seat:FindFirstChild("ImpactVFXAttachment") :: Attachment?
+if not impactVFXAtt then
+	impactVFXAtt = Instance.new("Attachment")
+	impactVFXAtt.Name = "ImpactVFXAttachment"
+	impactVFXAtt.Parent = seat
+end
+
+local impactSparks = impactVFXAtt:FindFirstChild("ImpactSparks") :: ParticleEmitter?
+if not impactSparks then
+	impactSparks = Instance.new("ParticleEmitter")
+	impactSparks.Name = "ImpactSparks"
+	impactSparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	impactSparks.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(0.15, Color3.fromRGB(255, 230, 80)),
+		ColorSequenceKeypoint.new(0.65, Color3.fromRGB(255, 120, 20)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(160, 30, 5)),
+	})
+	impactSparks.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.0),
+		NumberSequenceKeypoint.new(0.7, 0.1),
+		NumberSequenceKeypoint.new(1.0, 1.0),
+	})
+	impactSparks.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.35),
+		NumberSequenceKeypoint.new(0.4, 0.20),
+		NumberSequenceKeypoint.new(1.0, 0.05),
+	})
+	impactSparks.Lifetime = NumberRange.new(0.20, 0.45)
+	impactSparks.Speed = NumberRange.new(35, 75)
+	impactSparks.SpreadAngle = Vector2.new(50, 50)
+	impactSparks.Drag = 2.5
+	impactSparks.Acceleration = Vector3.new(0, -60, 0)
+	impactSparks.LightEmission = 1.0
+	impactSparks.Brightness = 4.0
+	impactSparks.Orientation = Enum.ParticleOrientation.VelocityParallel
+	impactSparks.EmissionDirection = Enum.NormalId.Front
+	impactSparks.Rate = 0
+	impactSparks.Enabled = false
+	impactSparks.Parent = impactVFXAtt
+end
+
+local impactDust = impactVFXAtt:FindFirstChild("ImpactDust") :: ParticleEmitter?
+if not impactDust then
+	impactDust = Instance.new("ParticleEmitter")
+	impactDust.Name = "ImpactDust"
+	impactDust.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	impactDust.Color = ColorSequence.new(Color3.fromRGB(210, 205, 200))
+	impactDust.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.40),
+		NumberSequenceKeypoint.new(0.8, 0.85),
+		NumberSequenceKeypoint.new(1.0, 1.0),
+	})
+	impactDust.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0.0, 0.8),
+		NumberSequenceKeypoint.new(1.0, 3.2),
+	})
+	impactDust.Lifetime = NumberRange.new(0.25, 0.50)
+	impactDust.Speed = NumberRange.new(10, 25)
+	impactDust.SpreadAngle = Vector2.new(45, 45)
+	impactDust.Drag = 4.0
+	impactDust.Acceleration = Vector3.new(0, -10, 0)
+	impactDust.EmissionDirection = Enum.NormalId.Front
+	impactDust.Rate = 0
+	impactDust.Enabled = false
+	impactDust.Parent = impactVFXAtt
+end
+
+local impactFlash = impactVFXAtt:FindFirstChild("ImpactFlash") :: PointLight?
+if not impactFlash then
+	impactFlash = Instance.new("PointLight")
+	impactFlash.Name = "ImpactFlash"
+	impactFlash.Color = Color3.fromRGB(255, 220, 130)
+	impactFlash.Range = 18
+	impactFlash.Brightness = 0
+	impactFlash.Shadows = false
+	impactFlash.Parent = impactVFXAtt
 end
 
 -- ============================================================================
@@ -692,12 +773,71 @@ repairRemote.OnServerEvent:Connect(function(player: Player)
 end)
 
 -- ============================================================================
--- 6. PEDESTRIAN RAGDOLL & WALL COLLISION DAMAGE
+-- 6. PEDESTRIAN RAGDOLL & WALL COLLISION DAMAGE + TIRE SMOKE
 -- ============================================================================
+local function ensureTireSmoke()
+	for _, wName in ipairs({ "FL", "FR", "RL", "RR" }) do
+		local wheel = wheelsModel:FindFirstChild(wName)
+		if wheel and wheel:IsA("BasePart") then
+			local att = wheel:FindFirstChild("TireSmokeAttachment") :: Attachment?
+			if not att then
+				att = Instance.new("Attachment")
+				att.Name = "TireSmokeAttachment"
+				att.Position = Vector3.new(0, -wheel.Size.Y * 0.45, 0)
+				att.Parent = wheel
+			end
+			local pe = att:FindFirstChild("TireSmoke") :: ParticleEmitter?
+			if not pe then
+				pe = Instance.new("ParticleEmitter")
+				pe.Name = "TireSmoke"
+				pe.Texture = "rbxasset://textures/particles/smoke_main.dds"
+				pe.Color = ColorSequence.new(Color3.fromRGB(225, 225, 225), Color3.fromRGB(245, 245, 245))
+				pe.Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.45),
+					NumberSequenceKeypoint.new(0.6, 0.7),
+					NumberSequenceKeypoint.new(1, 1.0),
+				})
+				pe.Size = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.8),
+					NumberSequenceKeypoint.new(1, 3.2),
+				})
+				pe.Lifetime = NumberRange.new(0.5, 0.85)
+				pe.Rate = 28
+				pe.Speed = NumberRange.new(3, 8)
+				pe.SpreadAngle = Vector2.new(35, 35)
+				pe.EmissionDirection = Enum.NormalId.Back
+				pe.Enabled = false
+				pe.Parent = att
+			end
+		end
+	end
+end
+ensureTireSmoke()
+
 local lastVehicleVelocity = Vector3.zero
 RunService.Heartbeat:Connect(function()
-	if seat.Parent then
-		lastVehicleVelocity = seat.AssemblyLinearVelocity
+	if not seat.Parent then
+		return
+	end
+	lastVehicleVelocity = seat.AssemblyLinearVelocity
+
+	-- Drift & Wheel Slide Tire Smoke
+	local occupant = seat.Occupant
+	local planarVel = Vector3.new(lastVehicleVelocity.X, 0, lastVehicleVelocity.Z)
+	local rightDir = Vector3.new(seat.CFrame.RightVector.X, 0, seat.CFrame.RightVector.Z)
+	local lateralSpeed = rightDir.Magnitude > 0.01 and math.abs(planarVel:Dot(rightDir.Unit)) or 0
+	local isDrifting = occupant ~= nil and (lateralSpeed >= 7.0 and planarVel.Magnitude >= 12.0)
+
+	for _, wName in ipairs({ "FL", "FR", "RL", "RR" }) do
+		local wheel = wheelsModel:FindFirstChild(wName)
+		local att = wheel and wheel:FindFirstChild("TireSmokeAttachment")
+		local pe = att and att:FindFirstChild("TireSmoke") :: ParticleEmitter?
+		if pe then
+			local shouldSmoke = isDrifting and (wName == "RL" or wName == "RR" or lateralSpeed >= 14.0)
+			if pe.Enabled ~= shouldSmoke then
+				pe.Enabled = shouldSmoke
+			end
+		end
 	end
 end)
 
@@ -772,6 +912,59 @@ local function getImpactDamage(speed: number): number
 	return tiers[#tiers].damage
 end
 
+local lastSparkTime = 0
+
+local function triggerImpactVFX(
+	sourcePart: BasePart,
+	carContactPos: Vector3,
+	sparkDirection: Vector3,
+	intensity: number
+)
+	if not impactVFXAtt or not impactSparks then
+		return
+	end
+
+	-- 1. Parent directly to the car part so the emitter stays anchored to the car body
+	impactVFXAtt.Parent = sourcePart
+
+	-- 2. Calculate local contact point clamped to the outer surface of the car part
+	local localPos = sourcePart.CFrame:PointToObjectSpace(carContactPos)
+	local halfSize = sourcePart.Size * 0.5
+	local clampedLocal = Vector3.new(
+		math.clamp(localPos.X, -halfSize.X, halfSize.X),
+		math.clamp(localPos.Y, -halfSize.Y, halfSize.Y),
+		math.clamp(localPos.Z, -halfSize.Z, halfSize.Z)
+	)
+
+	-- 3. Orient spark emission outwards/backwards from the car using CFrame.lookAt
+	local safeSparkDir = (sparkDirection.Magnitude > 0.05) and sparkDirection.Unit
+		or (sourcePart.Position - seat.Position).Unit
+	local localSparkDir = sourcePart.CFrame:VectorToObjectSpace(safeSparkDir)
+	if localSparkDir.Magnitude < 0.01 then
+		localSparkDir = Vector3.new(0, 0, -1)
+	end
+	impactVFXAtt.CFrame = CFrame.lookAt(clampedLocal, clampedLocal + localSparkDir)
+
+	-- 4. Emit sparks directly off the car body
+	local sparkCount = math.clamp(math.floor(intensity * 1.6), 20, 85)
+	impactSparks:Emit(sparkCount)
+
+	if intensity >= 18 and impactDust then
+		local dustCount = math.clamp(math.floor(intensity * 0.25), 4, 14)
+		impactDust:Emit(dustCount)
+	end
+
+	if impactFlash then
+		impactFlash.Brightness = math.clamp(intensity * 0.16, 2.0, 6.0)
+		task.delay(0.06, function()
+			if impactFlash and impactFlash.Parent then
+				local tw = TweenService:Create(impactFlash, TweenInfo.new(0.12), { Brightness = 0 })
+				tw:Play()
+			end
+		end)
+	end
+end
+
 local function processImpact(sourcePart: BasePart, otherPart: BasePart)
 	if otherPart:IsDescendantOf(car) or not otherPart.CanCollide then
 		return
@@ -785,53 +978,186 @@ local function processImpact(sourcePart: BasePart, otherPart: BasePart)
 		return
 	end
 
-	if car:GetAttribute("SconWallClimbActive") == true or car:GetAttribute("SconFlightBoostActive") == true then
-		return
-	end
+	local isStuntActive = (car:GetAttribute("SconWallClimbActive") == true)
+		or (car:GetAttribute("SconFlightBoostActive") == true)
 
 	local now = os.clock()
-	if now - lastImpactTime < 0.65 then
-		return
-	end
-
 	local relVel = lastVehicleVelocity - otherPart.AssemblyLinearVelocity
 	local carLook = seat.CFrame.LookVector
-	local sensorDir = sourcePart.Name == "Rear" and -carLook or carLook
+	local sensorDir = (sourcePart.Name == "Rear" or sourcePart.Name == "RearBumper") and -carLook
+		or (sourcePart.Name == "SideDoorL" or sourcePart.Name == "SideL") and -seat.CFrame.RightVector
+		or (sourcePart.Name == "SideDoorR" or sourcePart.Name == "SideR") and seat.CFrame.RightVector
+		or carLook
+
+	local speedMag = relVel.Magnitude
 	local horizDir = Vector3.new(sensorDir.X, 0, sensorDir.Z)
-	if horizDir.Magnitude < 0.1 then
+	local sensorClosing = (horizDir.Magnitude > 0.1) and relVel:Dot(horizDir.Unit) or speedMag
+	local closingSpeed = math.max(sensorClosing, speedMag * 0.70)
+
+	-- Ignore normal flat ground contact (unless hard vertical drop)
+	if otherPart.Name == "Road" or otherPart.Name == "Baseplate" or otherPart.Name:lower():find("terrain") then
+		if math.abs(relVel.Y) < 22 then
+			return
+		end
+	end
+
+	if closingSpeed < 4.5 then
 		return
 	end
-	local closingSpeed = relVel:Dot(horizDir.Unit)
 
-	if closingSpeed < 12 then
-		return
-	end
+	-- Calculate exact contact point via Raycast
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Include
+	rayParams.FilterDescendantsInstances = { otherPart }
+	local rayDir = (otherPart.Position - sourcePart.Position)
+	local rayDist = rayDir.Magnitude
+	local hitResult =
+		workspace:Raycast(sourcePart.Position - rayDir.Unit * 0.5, rayDir.Unit * (rayDist + 3.0), rayParams)
 
-	lastImpactTime = now
-	if closingSpeed >= 55 then
-		impactHeavySound.Volume = math.clamp(0.45 + (closingSpeed - 55) * 0.004, 0.45, 0.65)
-		impactHeavySound.PlaybackSpeed = 0.96
-		impactHeavySound.TimePosition = 0
-		impactHeavySound:Play()
+	local hitNormal = hitResult and hitResult.Normal or -sensorDir
+	local worldHitPoint = hitResult and hitResult.Position or otherPart.Position
+
+	-- Surface contact position directly ON the car body (sourcePart)
+	local localHit = sourcePart.CFrame:PointToObjectSpace(worldHitPoint)
+	local halfSize = sourcePart.Size * 0.5
+	local clampedLocal = Vector3.new(
+		math.clamp(localHit.X, -halfSize.X, halfSize.X),
+		math.clamp(localHit.Y, -halfSize.Y, halfSize.Y),
+		math.clamp(localHit.Z, -halfSize.Z, halfSize.Z)
+	)
+	local carContactPos = sourcePart.CFrame:PointToWorldSpace(clampedLocal)
+
+	-- Spark spray direction: sprays backwards along relative motion + outward deflection from impact face
+	local sparkDir: Vector3
+	if speedMag >= 8 then
+		sparkDir = (-relVel.Unit * 0.75 + hitNormal * 0.35 + Vector3.new(0, 0.25, 0)).Unit
 	else
-		impactLightSound.Volume = math.clamp(0.24 + (closingSpeed - 12) * 0.007, 0.24, 0.54)
-		impactLightSound.PlaybackSpeed = math.clamp(0.78 - (closingSpeed - 12) * 0.002, 0.68, 0.80)
-		impactLightSound.TimePosition = 0
-		impactLightSound:Play()
+		sparkDir = ((carContactPos - seat.Position).Unit * 0.6 + hitNormal * 0.4 + Vector3.new(0, 0.3, 0)).Unit
 	end
 
-	if car:GetAttribute("GodMode") == true then
-		return
+	-- Trigger spark effect mounted directly on the car body (0.08s cooldown for smooth continuous scraping)
+	if now - lastSparkTime >= 0.08 then
+		lastSparkTime = now
+		triggerImpactVFX(sourcePart, carContactPos, sparkDir, closingSpeed)
 	end
 
-	local damage = getImpactDamage(closingSpeed)
-	if damage <= 0 then
-		return
-	end
+	-- Trigger damage and crash sound (with 0.45s cooldown to prevent sound spam)
+	if now - lastImpactTime >= 0.45 then
+		lastImpactTime = now
+		if closingSpeed >= 45 then
+			impactHeavySound.Volume = math.clamp(0.50 + (closingSpeed - 45) * 0.005, 0.50, 0.85)
+			impactHeavySound.PlaybackSpeed = 0.96
+			impactHeavySound.TimePosition = 0
+			impactHeavySound:Play()
+		else
+			impactLightSound.Volume = math.clamp(0.28 + (closingSpeed - 5) * 0.008, 0.28, 0.60)
+			impactLightSound.PlaybackSpeed = math.clamp(0.80 - (closingSpeed - 5) * 0.003, 0.68, 0.85)
+			impactLightSound.TimePosition = 0
+			impactLightSound:Play()
+		end
 
-	local currentHealth = tonumber(car:GetAttribute("Health")) or MAX_HEALTH
-	car:SetAttribute("Health", math.max(0, currentHealth - damage))
+		if not isStuntActive and car:GetAttribute("GodMode") ~= true then
+			local damage = getImpactDamage(closingSpeed)
+			if damage > 0 then
+				local currentHealth = tonumber(car:GetAttribute("Health")) or MAX_HEALTH
+				car:SetAttribute("Health", math.max(0, currentHealth - damage))
+			end
+		end
+	end
 end
+
+-- Ensure side sensors exist for full 360-degree impact & scrape detection
+local function ensureSensor(name: string, relOffset: Vector3, size: Vector3)
+	if not impactFolder then
+		return nil
+	end
+	local sensor = impactFolder:FindFirstChild(name) :: BasePart?
+	if not sensor then
+		sensor = Instance.new("Part")
+		sensor.Name = name
+		sensor.Size = size
+		sensor.Transparency = 1
+		sensor.CanCollide = false
+		sensor.CanTouch = true
+		sensor.CanQuery = false
+		sensor.Massless = true
+		sensor.CFrame = seat.CFrame * CFrame.new(relOffset)
+		sensor.Parent = impactFolder
+
+		local weld = Instance.new("WeldConstraint")
+		weld.Name = "Weld"
+		weld.Part0 = sensor
+		weld.Part1 = seat
+		weld.Parent = sensor
+	end
+	return sensor
+end
+
+ensureSensor("SideL", Vector3.new(-2.1, 1.8, 0.89), Vector3.new(0.4, 1.6, 14.0))
+ensureSensor("SideR", Vector3.new(4.9, 1.8, 0.89), Vector3.new(0.4, 1.6, 14.0))
+
+-- Ensure solid bumper and side collision proxies exist to protect body meshes from penetrating walls/poles
+local function ensureBumperCollider(name: string, relOffset: Vector3, size: Vector3): BasePart
+	local col = bodyModel:FindFirstChild(name) :: BasePart?
+	if not col then
+		col = Instance.new("Part")
+		col.Name = name
+		col.Size = size
+		col.Transparency = 1
+		col.CanCollide = false
+		col.CanTouch = true
+		col.CanQuery = false
+		col.Massless = true
+		col.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0.0, 0.0, 100, 100)
+		col.CFrame = seat.CFrame * CFrame.new(relOffset)
+		col.Parent = bodyModel
+
+		local weld = Instance.new("WeldConstraint")
+		weld.Name = "Weld"
+		weld.Part0 = col
+		weld.Part1 = seat
+		weld.Parent = col
+	else
+		col.Size = size
+		col.CanCollide = false
+		col.CanTouch = true
+		col.CanQuery = false
+		col.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0.0, 0.0, 100, 100)
+	end
+
+	-- Isolate collider from internal chassis parts (wheels & seat) so physics never binds
+	for _, wName in ipairs({ "FL", "FR", "RL", "RR" }) do
+		local wheelPart = wheelsModel and wheelsModel:FindFirstChild(wName)
+		if wheelPart and wheelPart:IsA("BasePart") then
+			local ncName = "NC_" .. name .. "_" .. wName
+			if not col:FindFirstChild(ncName) then
+				local nc = Instance.new("NoCollisionConstraint")
+				nc.Name = ncName
+				nc.Part0 = col
+				nc.Part1 = wheelPart
+				nc.Parent = col
+			end
+		end
+	end
+	local ncSeatName = "NC_" .. name .. "_Seat"
+	if not col:FindFirstChild(ncSeatName) then
+		local ncSeat = Instance.new("NoCollisionConstraint")
+		ncSeat.Name = ncSeatName
+		ncSeat.Part0 = col
+		ncSeat.Part1 = seat
+		ncSeat.Parent = col
+	end
+
+	col.Touched:Connect(function(otherPart: BasePart)
+		if otherPart:IsA("BasePart") then
+			processImpact(col, otherPart)
+		end
+	end)
+	return col
+end
+
+ensureBumperCollider("FrontBumperCollider", Vector3.new(1.40, 1.40, -6.80), Vector3.new(6.4, 1.4, 1.8))
+ensureBumperCollider("RearBumperCollider", Vector3.new(1.40, 1.40, 7.90), Vector3.new(6.4, 1.4, 2.2))
 
 if impactFolder then
 	for _, sensor in ipairs(impactFolder:GetChildren()) do
@@ -846,6 +1172,41 @@ if impactFolder then
 			end)
 		end
 	end
+end
+
+local weightBrick = bodyModel:FindFirstChild("#Weight")
+if weightBrick and weightBrick:IsA("BasePart") then
+	weightBrick.Touched:Connect(function(otherPart: BasePart)
+		if otherPart:IsA("BasePart") then
+			processImpact(weightBrick, otherPart)
+		end
+	end)
+end
+
+local function connectHitboxSensors(folder: Instance)
+	for _, part in ipairs(folder:GetChildren()) do
+		if part:IsA("BasePart") and not part:GetAttribute("ImpactConnected") then
+			part:SetAttribute("ImpactConnected", true)
+			part.Touched:Connect(function(otherPart: BasePart)
+				if otherPart:IsA("BasePart") then
+					processImpact(part, otherPart)
+				end
+			end)
+		end
+	end
+end
+
+local sconHitbox = bodyModel and bodyModel:FindFirstChild("SconHitbox")
+if sconHitbox then
+	connectHitboxSensors(sconHitbox)
+end
+if bodyModel then
+	bodyModel.ChildAdded:Connect(function(child: Instance)
+		if child.Name == "SconHitbox" then
+			task.wait(0.1)
+			connectHitboxSensors(child)
+		end
+	end)
 end
 
 -- ============================================================================

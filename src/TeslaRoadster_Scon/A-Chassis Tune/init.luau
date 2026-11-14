@@ -13,126 +13,102 @@
 	(α╕äα╣êα╕▓α╕¡α╕╖α╣êα╕Öα╕öα╣ëα╕▓α╕Öα╕Ñα╣êα╕▓α╕çα╕¡α╕┤α╕çα╕êα╕▓α╕üα╕Üα╕Ñα╣çα╕¡α╕üα╕Öα╕╡α╣ë)
 ============================================================ ]]
 local Config = {
-	-- ความเร็วและอัตราเร่ง (Arcade Stunt & Wall-Climb Edition)
-	TopSpeed = 215, -- ความเร็วปกติ km/h (ขับมันในเมือง คุมอยู่ไม่หลุดแมพ)
-	FinalDrive = 3.85, -- อัตราทดเฟืองท้าย แรงบิดสูงสำหรับไต่กำแพง 90 องศาและพุ่งขึ้นแรมป์
-	Acceleration = 10.5, -- อัตราเร่งทันใจ ไม่หน่วงเวลาขึ้นเนินชัน/กำแพง
-	ThrottleResponse = 0.65, -- คันเร่งตอบสนองฉับไว
+	-- ความเร็วและอัตราเร่ง (Urban Arcade 170 km/h High-Torque Edition)
+	TopSpeed = 170, -- ล็อกเพดานความเร็ว 170 km/h คุมง่ายในเมืองตามคลิปต้นแบบ
+	FinalDrive = 4.15,
+	Acceleration = 13.5, -- อัตราเร่งต้นจัด 0-170 km/h ทันใจหลังชนหรือเลี้ยว
+	ThrottleResponse = 0.78,
 
-	-- วงเลี้ยว / พวงมาลัย (Steering)
-	MaxSteerAngle = 38,
-	SteerSpeed = 1.6,
-	ReturnSpeed = 2.4,
-	SteerAtTopSpeed = 52,
-	SteerDecaySpeed = 160,
-	-- เลี้ยวแบบอาร์เคด (Arcade Steering & Slip Control - รองรับ 3D บนกำแพงและเพดาน)
+	-- เลี้ยวแบบอาร์เคด (Arcade Steering)
 	ArcadeSteering = true,
-	ArcadeSteerLowSpeedDegPerSec = 175, -- เลี้ยวคล่องความเร็วต่ำ (องศา/วินาที)
-	ArcadeSteerHighSpeedDegPerSec = 135, -- ยังเลี้ยวคมตอนความเร็วสูง (องศา/วินาที)
-	ArcadeSteerFullSpeedKmh = 150, -- ความเร็วที่ใช้ความไวแบบ HighSpeed เต็มที่
-	ArcadeSteerMinMoveStudsPerSec = 1.5, -- ต่ำกว่านี้รถจะไม่หมุนเมื่อกดเลี้ยว
-	ArcadeSteerFullMoveStudsPerSec = 10, -- ความเร็วที่ได้แรงเลี้ยวเต็ม
-	ArcadeSteerResponse = 22, -- เริ่มเลี้ยวทันที
-	ArcadeSteerReleaseDamping = 16, -- ความเร็วที่หยุดหมุนหลังปล่อยปุ่ม
-	ArcadeVelocityFollow = 0.92, -- หมุนทิศความเร็วตามตัวรถบนพื้นผิวทุกมุม (0-1)
-	ArcadeLateralGrip = 14, -- เกาะพื้นผิวแน่น ลดการไถลข้างบนกำแพงและโค้ง
-	ArcadeRollStability = 12, -- แรงประคองตัวรถให้ตั้งฉากกับพื้นผิว
-	ArcadeRollDamping = 10, -- ลดการแกว่งตัวถัง
-	ArcadeVisualWheelAngleLow = 38, -- มุมล้อหน้าเมื่อเลี้ยวช้า
-	ArcadeVisualWheelAngleHigh = 20, -- มุมล้อหน้าเมื่อเลี้ยวเร็ว
-	CurbRecoveryEnabled = true,
-	CurbRecoveryGroundProbe = 3.5,
-	CurbRecoveryDuration = 0.45,
-	CurbRecoveryMinimumSpeed = 12,
-	CurbRecoveryRollStrength = 10,
-	CurbRecoveryPitchStrength = 6,
-	CurbRecoveryDamping = 16,
-	CurbRecoveryMaxAngularSpeed = 3.5,
+	ArcadeSteerMinTurnRadius = 11.5, -- จำกัดอัตราการหมุนที่ความเร็วต่ำ (1 km/h ไม่หมุนควงสว่าน)
+	ArcadeSteerLowSpeedDegPerSec = 170,
+	ArcadeSteerHighSpeedDegPerSec = 125,
+	ArcadeSteerFullSpeedKmh = 140,
+	ArcadeSteerMinMoveStudsPerSec = 1.5,
+	ArcadeSteerFullMoveStudsPerSec = 10,
+	ArcadeSteerResponse = 22,
+	ArcadeSteerReleaseDamping = 16,
+	ArcadeVelocityFollow = 0.92,
+	ArcadeLateralGrip = 14,
+	ArcadeRollStability = 16,
+	ArcadeRollDamping = 12,
+	ArcadeVisualWheelAngleLow = 28,
+	ArcadeVisualWheelAngleHigh = 12,
 
-	-- ฟิสิกส์น้ำหนักและแรงโน้มถ่วง (Weight & Balanced Stunt Gravity)
-	Weight = 1350,
-	GroundGravity = 210, -- แรงกดบนพื้นราบปกติ
-	AirGravity = 132, -- เบากว่าแรงโน้มถ่วงปกติเพื่อให้เหินสนุก แต่ลงพื้นสวยไม่ลอยหลุดแมพ
-	AirborneDensityScale = 1.0,
+	-- วงเลี้ยว / พวงมาลัย
+	MaxSteerAngle = 36,
+	SteerSpeed = 1.2,
+	ReturnSpeed = 1.8,
+	SteerAtTopSpeed = 52,
+	SteerDecaySpeed = 135,
 
-	-- ระบบไต่กำแพงและเกาะเพดาน 360° (Spider Wall-Climb & Ceiling Adhesion)
-	SpiderClimbEnabled = true,
-	SpiderAdhesionGravity = 240, -- แรงดูดกดตัวรถเข้ากับพื้นผิวปกติ
-	SpiderSteepAdhesionGravity = 280, -- แรงดูดพิเศษบนกำแพง 90° และเพดาน 180°
-	SpiderForwardProbeDist = 7.5, -- ระยะตรวจจับกำแพงข้างหน้าเพื่อพลิกหน้ารถขึ้นไต่
-	SpiderForwardProbeSpeedScale = 0.105, -- ขยายระยะตรวจจับตามความเร็ว (ไม่ชนกำแพงก่อนพลิก)
-	SpiderMinWallHeight = 2.6, -- ขอบเตี้ยกว่า 2.6 studs ปล่อยให้ล้อ/CurbAssist ข้ามแทนการพลิก 90°
-	SpiderAlignRate = 22.0, -- ความไวในการปรับระนาบตัวรถให้แนบไปกับกำแพง/ลูป
-	SpiderSnapRate = 34.0, -- ความไวในการพลิกขึ้นมุมหักศอก 90° และมุมพับขอบ
-	SpiderCrestWrapEnabled = true, -- พลิกตัวข้ามขอบบนของกำแพง/ตึก หรือใบมีด Flip 0.7 stud ได้อัตโนมัติ
-	SpiderTangentDriveAssist = 64, -- แรงขับเสริมบนกำแพงชัน/เพดาน (ไต่ลื่นไม่พุ่งหลุดยอดตึกเกินไป)
-	SpiderMaxClimbSpeed = 135, -- เพดานความเร็วไต่กำแพงแนวตั้ง (studs/s) เพื่อให้อยู่ในระยะเล่นของพาร์ค
-	SpiderStickDetachAirTime = 0.14, -- ช่วงกันหลุดเมื่อวิ่งข้ามรอยต่อลูป/สไปรอล
+	-- น้ำหนัก / ตอนรถเหิน (Arcade Stunt Hang-time & Ramp Launch)
+	Weight = 1180, -- ปรับน้ำหนักลงให้อารมณ์รถสปอร์ตเบาคล่องตัว เหินพุ่งง่ายขึ้น
+	GroundGravity = 196.2,
+	AirGravity = 88.0, -- แรงโน้มถ่วงกลางอากาศสไตล์อาร์เคด (ลอยตัวสวยงามแบบในคลิป ไม่ทิ้งดิ่งเป็นหินและไม่ลอยค้าง)
+	AirborneDensityScale = 0.80,
+	AirLaunchMinimumSpeed = 10,
+	AirLaunchBaseBoost = 28.0, -- แรงดีดส่งเหินเวลาแตะขอบแรมป์/เนิน
+	AirLaunchSpeedScale = 0.35, -- ยิ่งวิ่งเร็วมาเทคออฟ ยิ่งเหินได้ไกลและสูงขึ้น
+	AirLaunchMaxVerticalSpeed = 75.0, -- เพดานความเร็วแนวตั้งตอนเทคออฟ
+	AirPitchDownSpeed = 0.20, -- กด W กลางอากาศแล้วหัวก้มลงช้า/ยากขึ้น (ต้านทานการทิ่มหัว)
+	AirPitchUpSpeed = 1.25, -- กด S เชิดหัวขึ้นยังตอบสนองดี
+	AirRollSpeed = 1.40, -- กด A/D หมุนควงตัวรถ
 
-	-- ระบบตอนรถเหินและบิน (Air Launch, Glide & Controlled Jet Flight)
-	AirLaunchMinimumSpeed = 24,
-	AirLaunchBaseBoost = 10.0, -- พุ่งขึ้นกำลังดีเมื่อพ้นขอบแรมป์หรือยอดเนิน
-	AirLaunchSpeedScale = 0.12,
-	AirLaunchMaxVerticalSpeed = 44.0, -- เพดานแรงเหินแนวตั้งจากแรมป์ (ลงจอดได้ในเมือง)
-	AirLaunchForwardBoostMax = 14.0, -- แรงส่งพุ่งไปข้างหน้าตอนพ้นแรมป์
-	AirGlideLiftFactor = 0.22, -- แรงประคองร่อนกลางอากาศเบาๆ เฉพาะช่วงกำลังเหิน
-	AirPitchRate = 2.5, -- ความไวคุมก้ม/เงยหัวกลางอากาศ (W/S)
-	AirYawRate = 2.6, -- ความไวเลี้ยวกลางอากาศ (A/D)
-	AirRollRate = 5.5, -- ความไวควงสว่าน Barrel Roll (Space + A/D)
-	AirMaxVerticalSpeed = 48, -- เพดานความเร็วพุ่งขึ้นกลางอากาศ
-	AirMaxAltitude = 390, -- เพดานความสูงเหนือยอดตึกสูงสุดกันลอยหลุดแมพ
-	StuntCameraTiltBlend = 0.28, -- สัดส่วนการเอียงกล้องตามมุมตัวรถตอนไต่กำแพง/ลอยตัว (28%)
-	StuntCameraMaxRollDeg = 28, -- มุมเอียงกล้องสูงสุด (องศา) เพื่อไม่ให้เวียนหัวตอนกลับหัว 180°
+	-- ปิดระบบดูดไต่กำแพงแนวตั้ง (ใช้การเชิดข้ามรั้ว/ขอบทางตามธรรมชาติเหมือนคลิป)
+	WallClimbEnabled = false,
+	WallClimbMinHeight = 4.2,
+	WallClimbProbeDist = 6.0,
+	WallClimbAdhesionForce = 0,
+	WallClimbDriveSpeed = 0,
+	WallClimbPitchRate = 0,
+	WallClimbCrestUpBoost = 0,
+	WallClimbCrestForwardBoost = 0,
 
-	-- ระบบดีดตัวหลังบ้าน (Auto/Internal StuntJump — ไม่ผูกปุ่ม Q เพื่อให้ระบบทำงานอัตโนมัติ)
-	StuntJumpEnabled = true,
-	StuntJumpUpImpulse = 48, -- ความเร็วดีดตัวตั้งฉากกับพื้นหรือกำแพง
-	StuntJumpForwardImpulse = 14, -- แรงพุ่งไปข้างหน้าเล็กน้อยตอนดีดตัว
-	StuntJumpCooldown = 0.45,
-	StuntJumpMaxAirJumps = 1, -- กระโดดซ้ำกลางอากาศ (Double Jump) ได้ 1 ครั้ง!
-
-	-- ระบบเทอร์โบไอพ่น & บินกลางอากาศ (LeftShift / RightShift)
-	BoostEnabled = true,
-	BoostGroundAccel = 120, -- แรงเร่งเทอร์โบบนพื้นและกำแพง
-	BoostMaxSpeedKmh = 275, -- ความเร็วสูงสุดขณะกดบูสต์เทอร์โบ
-	BoostAirForwardAccel = 62, -- แรงดันเจ็ทไปข้างหน้ากลางอากาศ
-	BoostAirLiftAccel = 80, -- แรงประคองลอยกลางอากาศ (ชะลอตกเพื่อร่อนข้ามตึก กด S เพื่อไต่ขึ้น)
-	BoostAirMaxSpeed = 195, -- เพดานความเร็วรวมขณะบินกลางอากาศ (studs/s)
-
-	-- ระบบลดความเร็วเมื่อปล่อยคันเร่ง (ปล่อย W แล้วค่อยๆ หยุดสนิท ไม่ไหลค้าง)
-	CoastDecelForce = 1600,
-	AutoStopSpeedStuds = 3.5,
-
-	-- ระบบไต่พื้นต่างระดับต่อเนื่องแบบคุมความเร็ว (Zero-Cooldown Step Climb - Scon)
+	-- Curb Assist & Recovery (รองรับการเชิดข้ามฟุตบาทและรั้วเตี้ยถึง 4.2 studs ที่ความเร็ว 170 km/h)
 	CurbAssistEnabled = true,
-	CurbAssistMaxStep = 2.2, -- รองรับขอบต่างระดับและฟุตบาทสูงสุด 2.2 studs
-	CurbAssistProbeDistance = 0.95, -- สแกนระยะชิดหน้ายาง ป้องกันการยกตัวล่วงหน้าผิดจังหวะ
-	CurbAssistAcceleration = 48, -- แรงประคองเสริมขณะล้อติดขอบ
-	CurbAssistLookAheadSeconds = 0.04,
-	CurbAssistMaxProbeDistance = 2.6,
-	CurbAssistHopLeadSeconds = 0.04,
-	CurbAssistHopMaxTriggerDistance = 1.6,
-	CurbAssistHopDuration = 0.2,
-	CurbAssistMaxUpwardSpeed = 6.5,
-	CurbAssistAngularDampingRate = 8.0,
-	ClimbTCSBypassSpeedKmh = 22,
+	CurbAssistMaxStep = 4.2,
+	CurbAssistProbeDistance = 2.6,
+	CurbAssistAcceleration = 290,
+	CurbAssistLookAheadSeconds = 0.28,
+	CurbAssistMaxProbeDistance = 16,
+	CurbAssistHopLeadSeconds = 0.14,
+	CurbAssistHopMaxTriggerDistance = 9.5,
+	CurbAssistHopDuration = 0.18,
+	CurbAssistMaxUpwardSpeed = 22,
+	CurbAssistAngularDampingRate = 7,
+	CurbAssistClimbRange = 3.8,
+	CurbAssistClimbAcceleration = 185,
+	CurbAssistClimbMaxUpwardSpeed = 16,
+	CurbRecoveryEnabled = true,
+	CurbRecoveryMinimumSpeed = 18,
+	CurbRecoveryDuration = 0.65,
+	CurbRecoveryGroundProbe = 5.5,
+	CurbRecoveryRollStrength = 14,
+	CurbRecoveryPitchStrength = 6,
+	CurbRecoveryDamping = 18,
+	CurbRecoveryMaxAngularSpeed = 5.5,
 
-	-- แรงกดอากาศ (Aerodynamic Downforce)
-	DownforceFrontKgf = 50,
-	DownforceRearKgf = 65,
+	-- Aerodynamic grip (kgf at 200 km/h) - ลดลงเพื่อไม่ให้กดรถจมเวลาเหินเนิน/แรมป์
+	DownforceFrontKgf = 12,
+	DownforceRearKgf = 16,
 
-	-- ระบบเบรก (Braking)
-	BrakeForce = 5200,
-	-- ระบบการขับขี่สไตล์ ARCADE & DRIFT (HOKI HYBRID ENGINE)
-	TapDriftEnabled = true,
+	-- เบรก
+	BrakeForce = 6000,
+
+	-- Keep Scon features compatible
+	CoastDecelForce = 0,
+	AutoStopSpeedStuds = 0,
+	TapDriftEnabled = false,
 	TapDriftTapDuration = 0.35,
 	TapDriftMinSpeed = 18,
 	TapDriftRearBrake = 22000,
 	TapDriftPowerRatio = 0.55,
 	TapDriftMaxDuration = 1.35,
 	TireSmokeEnabled = true,
-	TireSmokeDriftRate = 75,
-	TireSmokeBrakeRate = 40,
+	TireSmokeDriftRate = 95,
+	TireSmokeBrakeRate = 65,
 }
 
 local Tune = {}
@@ -146,8 +122,8 @@ Tune.FlipType = "New" -- "New" uses AlignOrientation, "Old" uses BodyGyro. This 
 
 --[[Wheel Alignment]]
 --[Values are in degrees]
-Tune.FCamber = 0
-Tune.RCamber = 0
+Tune.FCamber = -0.5
+Tune.RCamber = -0.5
 Tune.FCaster = 0
 Tune.RCaster = 0
 Tune.FToe = 0
@@ -155,17 +131,16 @@ Tune.RToe = 0
 
 --[[Weight and CG]]
 Tune.Weight = Config.Weight -- Total weight (in kilograms, under Earth's gravity, including wheel and suspension weight)
-Tune.WeightBSize =
-	{ -- Size of weight brick in milimeters. You can find how to convert studs to milimeters inside the Units module.
-		--[[Width]]
-		1760,
-		--[[Height]]
-		820,
-		--[[Length]]
-		4120,
-	}
+Tune.WeightBSize = {
+	--[[Width]]
+	1900,
+	--[[Height]]
+	1303,
+	--[[Length]]
+	4545,
+}
 Tune.WeightDist = 44 -- Weight distribution (0 - on rear wheels, 100 - on front wheels, can be <0 or >100)
-Tune.CGHeight = 0.0 -- Lower CG reduces rollover on curb impacts
+Tune.CGHeight = -0.35 -- Pendulum low CG pulls raised wheels back to ground like the reference clip
 Tune.WBVisible = false -- Makes the weight brick visible
 
 Tune.GravComp = Config.GroundGravity -- Keep grounded tire load and grip
@@ -175,31 +150,31 @@ Tune.FWheelWeight = 22 -- Front Wheel Weight in kg
 Tune.RWheelWeight = 23 -- Rear Wheel Weight in kg
 
 Tune.AxleSize = 1.5 -- Size of structural members (larger = MORE STABLE / carry more weight)
-Tune.AxleDensity = 0.50 -- Balanced knuckle mass reduces PGS solver flex and wheel shimmy
+Tune.AxleDensity = 0.1 -- Density of structural members
 Tune.CustomSuspensionDensity = 1 -- Density of suspension joints, only applies to custom suspension. (0 makes them massless)
 
 --[[Suspension]]
 Tune.SuspensionEnabled = true -- Enables suspension, true or false
 
 --Front Strut
-Tune.FSusStiffness = 28.0 -- Calibrated to hold low stance with real upward travel
-Tune.FSusDamping = 9.0 -- Controlled rebound over uneven curbs
-Tune.FSwayBar = 3.0 -- Soft roll coupling so one wheel climbs cleanly without yanking opposite wheel
+Tune.FSusStiffness = 22.0 -- สปริงตอบสนองดี มีแรงส่งตัวเวลาวิ่งขึ้นเนิน/แรมป์
+Tune.FSusDamping = 4.2 -- แดมปิ้งพอดี คืนตัวไว ส่งแรงดีดตอนพ้นขอบแรมป์
+Tune.FSwayBar = 3.4 -- Limits body roll while retaining suspension travel
 
-Tune.FSusLength = 1.44 -- Calibrated to resting wishbone geometry
-Tune.FPreCompress = 0.16 -- Slight preload keeps spring seated
-Tune.FExtensionLim = 0.45 -- Extra droop travel for uneven terrain
-Tune.FCompressLim = 0.65 -- Ample bump travel to absorb curb impacts
+Tune.FSusLength = 1.44 -- Matches original travel geometry
+Tune.FPreCompress = 0.16 -- Compensates Scon's 1.44 resting spring mount so ride height matches original
+Tune.FExtensionLim = 0.85 -- Droop travel ให้ล้อยืดดันพื้นส่งตัวพ้นขอบแรมป์ได้เต็มที่
+Tune.FCompressLim = 0.60 -- Adds compression travel before the suspension bottoms out
 
 --Rear Strut
-Tune.RSusStiffness = 34.0 -- Calibrated for 56% rear load without bottoming out
-Tune.RSusDamping = 10.0 -- Fast settling after step transitions
-Tune.RSwayBar = 3.0 -- Independent articulation over staggered bumps
+Tune.RSusStiffness = 23.0 -- สปริงหลังช่วยหนุนส่งจังหวะท้ายพ้นขอบแรมป์
+Tune.RSusDamping = 4.5 -- คืนตัวไว ส่งแรงเหินให้รถลอยตัวได้สวยงาม
+Tune.RSwayBar = 2.4 -- Balance front/rear roll resistance
 
-Tune.RSusLength = 1.50 -- Matches rear ride height
-Tune.RPreCompress = 0.18 -- Slight preload keeps spring seated
-Tune.RExtensionLim = 0.45 -- Extra droop travel for uneven terrain
-Tune.RCompressLim = 0.65 -- Ample bump travel to absorb curb impacts
+Tune.RSusLength = 1.44
+Tune.RPreCompress = 0.16 -- Compensates Scon's 1.44 resting spring mount so ride height matches original
+Tune.RExtensionLim = 0.85
+Tune.RCompressLim = 0.60
 
 --Old Suspension Settings, applies if there is no SuspensionGeometry for the respective wheel
 Tune.FSusAngle = 80 -- Spring Angle (degrees from horizontal)
@@ -261,7 +236,7 @@ Tune.Ackerman = 1.1 -- If you don't know what it is don't touch it, ranges from 
 
 -- "Manual" steering type allows you to manually set the angle of the wheels
 Tune.SteerInner = Config.MaxSteerAngle -- Inner wheel steering (in degrees)
-Tune.SteerOuter = Config.MaxSteerAngle * 0.86 -- Outer wheel steering (in degrees)
+Tune.SteerOuter = Config.MaxSteerAngle * 0.92 -- Outer wheel steering (in degrees)
 
 -- Steer speed tuning
 Tune.SteerSpeed = Config.SteerSpeed -- Steering increment per tick (in degrees)
@@ -294,36 +269,34 @@ Tune.CurbRecoveryMinimumSpeed = Config.CurbRecoveryMinimumSpeed
 Tune.CurbRecoveryRollStrength = Config.CurbRecoveryRollStrength
 Tune.CurbRecoveryPitchStrength = Config.CurbRecoveryPitchStrength
 Tune.CurbRecoveryDamping = Config.CurbRecoveryDamping
-Tune.CurbRecoveryMaxAngularSpeed = Config.CurbRecoveryMaxAngularSpeed -- Speed of gradient cutoff of steering speed (in km/h)
-Tune.MinSteer = Config.SteerAtTopSpeed -- Minimum steering angle at max steer decay (in percent)
-Tune.MinSteerSpeed = 75 -- Minimum steering speed at max decay (in percent)
-Tune.MSteerExp = 1 -- Mouse steering exponential degree
+Tune.CurbRecoveryMaxAngularSpeed = Config.CurbRecoveryMaxAngularSpeed
+Tune.MinSteer = Config.SteerAtTopSpeed
+Tune.MinSteerSpeed = 75
+Tune.MSteerExp = 1
 
 -- Counter-steer
-Tune.CSEnabled = true -- Enables or disables countersteering
-Tune.CSAmt = 75 -- Amount of countersteering at a full perpendicular slide (in percent)
-Tune.CSSteerThresh = 8 -- Threshold before countersteering activates (in percent)
-Tune.CSSpeedThresh = 15 -- Speed threshold before countersteering can activate (in km/h)
+Tune.CSEnabled = false
+Tune.CSAmt = 100
+Tune.CSSteerThresh = 10
+Tune.CSSpeedThresh = 10
 
 -- Four Wheel Steering
-Tune.FWSteer = "None" -- Static, Speed, Both, or None
-Tune.RSteerOuter = 2.2 -- Outer rear wheel steering angle (in degrees)
-Tune.RSteerInner = 1.6 -- Inner rear wheel steering angle (in degrees)
-Tune.RSteerSpeed = 80 -- Speed at which 4WS fully activates (Speed), deactivates (Static), or transition begins (Both) (km/h)
-Tune.RSteerDecay = 150 -- Speed of gradient cutoff (in km/h)
+Tune.FWSteer = "None"
+Tune.RSteerOuter = 2.2
+Tune.RSteerInner = 1.6
+Tune.RSteerSpeed = 80
+Tune.RSteerDecay = 150
 
-Tune.RSteerD = 1000 -- Rear Steering Damping (old only)
-Tune.RSteerP = 50000 -- Rear Steering Aggressiveness (old only)
-Tune.RSteerMaxTorque = 20000 -- Rear Steering Force (old only)
+Tune.RSteerD = 1000
+Tune.RSteerP = 50000
+Tune.RSteerMaxTorque = 20000
 
 -- Steering aggressiveness
-Tune.SteerSmoothing = 1 -- The lower, the smoother the steering will arrive at max angle.
-Tune.PowerSteeringType = "Servo" -- "Servo" uses Rotate HingeConstraint, "New" uses AlignOrientation, "Old" uses BodyGyro
-Tune.SteerD = 3500 -- Steering Damping (old only)
-Tune.SteerP = 150000 -- Steering Aggressiveness (old only)
-Tune.SteerMaxTorque = 350000 -- Steering Force (old only)
-Tune.SteerServoMaxTorque = 5000000 -- Rotate hinge servo torque for crisp steering under load
-Tune.SteerServoAngularSpeed = 24 -- Rotate hinge servo angular speed (rad/s)
+Tune.SteerSmoothing = 1
+Tune.PowerSteeringType = "Old"
+Tune.SteerD = 1000
+Tune.SteerP = 50000
+Tune.SteerMaxTorque = 20000
 
 --[[Engine (Detomiks)]]
 
@@ -412,7 +385,7 @@ Tune.BrakeAccel = 0.1 -- Brake acceleration, applied per tick
 Tune.BrakeDecel = 0.2 -- Brake deceleration, applied per tick
 
 -- Engine speed
-Tune.RevBounce = 0 -- RPM kickback from redline
+Tune.RevBounce = 200 -- RPM kickback from redline
 Tune.OverRev = false -- Set to true to allow the RPM to go above redline
 
 Tune.RevAccel = 300 -- RPM acceleration when clutch is on (this should be higher than RevDecay and RevDecayRPM)
@@ -422,12 +395,12 @@ Tune.RevDecayRPM = 60 -- RPM decay from engine speed
 Tune.Flywheel = 500 -- Flywheel weight (higher = faster response, lower = more stable RPM)
 Tune.DumpMult = 1.0 -- Flywheel energy multiplier when dumping the clutch (keep at 1.0 for the best result).
 
-Tune.IdleThrottle = 0 -- Zero phantom creep throttle when releasing W
+Tune.IdleThrottle = 5 -- Percent throttle with no input. (in percent)
 Tune.IdleDamping = 4800 -- Damping of idle in RPM. This will change that actual idle RPM at higher values.
 Tune.IdlePadding = 800 -- Added on top of IdleRPM to account for IdleDamping
 Tune.RemoveCreep = true -- Tries to remove the natural creep of the chassis by applying clutch if there is no input throttle and if the RPM is below idle.
 
-Tune.InclineComp = 3.0 -- Torque compensation multiplier for inclines (applies gradient from 0-90 degrees)
+Tune.InclineComp = 1.0 -- Torque compensation multiplier for inclines (applies gradient from 0-90 degrees)
 
 --[[Drivetrain]]
 Tune.Config = "AWD" -- "FWD" , "RWD" , "AWD"
@@ -442,14 +415,14 @@ Tune.RDiffPower = 20 -- 0 - 100				(Rear wheels, only if driven)
 Tune.RDiffCoast = 20 -- 0 - 100				(Rear wheels, only if driven)
 Tune.RDiffPreload = 15 -- 0 - 100				(Rear wheels, only if driven)
 
--- Traction Control Settings (Disabled in Arcade Stunt mode so full AWD power drives straight up walls)
-Tune.TCSEnabled = false -- Implements TCS
+-- Traction Control Settings
+Tune.TCSEnabled = true -- Implements TCS
 Tune.TCSThreshold = 10 -- Slip speed allowed before TCS starts working (in km/h)
 Tune.TCSGradient = 10 -- Slip speed gradient between 0 to max reduction (in km/h)
 Tune.TCSLimit = 4 -- Minimum amount of torque at max reduction (in percent)
 
 -- Electronic Stability Control Settings
-Tune.ESCEnabled = false -- Implements ESC. TCS MUST ALSO BE ENABLED. This uses the same keybind as TCS.
+Tune.ESCEnabled = true -- Implements ESC. TCS MUST ALSO BE ENABLED. This uses the same keybind as TCS.
 Tune.ESCVector = -0.2 -- Force from the front to the rear for ESC. "-1" has a 100% front bias, "0" has a 50:50 bias, and "1" has a 100% rear bias. Can be any number between that range.
 Tune.ESCThreshold = 0.85 -- Force difference in Gs before ESC starts working.
 Tune.ESCSpeed = 30 -- Minimum speed before ESC can work in km/h.
@@ -524,8 +497,8 @@ Tune.AutoDownThresh = 1400 -- Automatic downshift point (relative to peak RPM, p
 Tune.ShiftThrot = 100 -- Throttle level when shifting down to revmatch, 0 - 100%
 
 --Automatic: DCT
-Tune.ShiftUpTime = 0.05 -- Time required to shift into next gear, from a lower gear to a higher one.
-Tune.ShiftDnTime = 0.05 -- Time required to shift into next gear, from a higher gear to a lower one.
+Tune.ShiftUpTime = 0.2 -- Time required to shift into next gear, from a lower gear to a higher one.
+Tune.ShiftDnTime = 0.1 -- Time required to shift into next gear, from a higher gear to a lower one.
 
 --Gear Ratios
 --You can tune the gears in the engine graphs by switching G_TunerType inside Desmos
@@ -561,38 +534,6 @@ Tune.AirLaunchMinimumSpeed = Config.AirLaunchMinimumSpeed
 Tune.AirLaunchBaseBoost = Config.AirLaunchBaseBoost
 Tune.AirLaunchSpeedScale = Config.AirLaunchSpeedScale
 Tune.AirLaunchMaxVerticalSpeed = Config.AirLaunchMaxVerticalSpeed
-Tune.AirLaunchForwardBoostMax = Config.AirLaunchForwardBoostMax
-Tune.SpiderClimbEnabled = Config.SpiderClimbEnabled
-Tune.SpiderAdhesionGravity = Config.SpiderAdhesionGravity
-Tune.SpiderSteepAdhesionGravity = Config.SpiderSteepAdhesionGravity
-Tune.SpiderForwardProbeDist = Config.SpiderForwardProbeDist
-Tune.SpiderForwardProbeSpeedScale = Config.SpiderForwardProbeSpeedScale
-Tune.SpiderMinWallHeight = Config.SpiderMinWallHeight
-Tune.SpiderAlignRate = Config.SpiderAlignRate
-Tune.SpiderSnapRate = Config.SpiderSnapRate
-Tune.SpiderCrestWrapEnabled = Config.SpiderCrestWrapEnabled
-Tune.SpiderTangentDriveAssist = Config.SpiderTangentDriveAssist
-Tune.SpiderMaxClimbSpeed = Config.SpiderMaxClimbSpeed
-Tune.SpiderStickDetachAirTime = Config.SpiderStickDetachAirTime
-Tune.AirGlideLiftFactor = Config.AirGlideLiftFactor
-Tune.AirPitchRate = Config.AirPitchRate
-Tune.AirYawRate = Config.AirYawRate
-Tune.AirRollRate = Config.AirRollRate
-Tune.AirMaxVerticalSpeed = Config.AirMaxVerticalSpeed
-Tune.AirMaxAltitude = Config.AirMaxAltitude
-Tune.StuntCameraTiltBlend = Config.StuntCameraTiltBlend
-Tune.StuntCameraMaxRollDeg = Config.StuntCameraMaxRollDeg
-Tune.StuntJumpEnabled = Config.StuntJumpEnabled
-Tune.StuntJumpUpImpulse = Config.StuntJumpUpImpulse
-Tune.StuntJumpForwardImpulse = Config.StuntJumpForwardImpulse
-Tune.StuntJumpCooldown = Config.StuntJumpCooldown
-Tune.StuntJumpMaxAirJumps = Config.StuntJumpMaxAirJumps
-Tune.BoostEnabled = Config.BoostEnabled
-Tune.BoostGroundAccel = Config.BoostGroundAccel
-Tune.BoostMaxSpeedKmh = Config.BoostMaxSpeedKmh
-Tune.BoostAirForwardAccel = Config.BoostAirForwardAccel
-Tune.BoostAirLiftAccel = Config.BoostAirLiftAccel
-Tune.BoostAirMaxSpeed = Config.BoostAirMaxSpeed
 Tune.CoastDecelForce = Config.CoastDecelForce
 Tune.AutoStopSpeedStuds = Config.AutoStopSpeedStuds
 Tune.CurbAssistEnabled = Config.CurbAssistEnabled
@@ -606,7 +547,9 @@ Tune.CurbAssistHopMaxTriggerDistance = Config.CurbAssistHopMaxTriggerDistance
 Tune.CurbAssistHopDuration = Config.CurbAssistHopDuration
 Tune.CurbAssistMaxUpwardSpeed = Config.CurbAssistMaxUpwardSpeed
 Tune.CurbAssistAngularDampingRate = Config.CurbAssistAngularDampingRate
-Tune.ClimbTCSBypassSpeedKmh = Config.ClimbTCSBypassSpeedKmh
+Tune.CurbAssistClimbRange = Config.CurbAssistClimbRange
+Tune.CurbAssistClimbAcceleration = Config.CurbAssistClimbAcceleration
+Tune.CurbAssistClimbMaxUpwardSpeed = Config.CurbAssistClimbMaxUpwardSpeed
 -- Hoki Arcade Drift Multi-Vehicle Mappings
 Tune.TapDriftEnabled = Config.TapDriftEnabled
 Tune.TapDriftTapDuration = Config.TapDriftTapDuration
@@ -620,8 +563,8 @@ Tune.TireSmokeBrakeRate = Config.TireSmokeBrakeRate
 Tune.DownforceFrontKgf = Config.DownforceFrontKgf
 Tune.DownforceRearKgf = Config.DownforceRearKgf
 Tune.ReverseSpeed = 40 -- Maximum reverse speed limit
-Tune.SLimitGradient = 6 -- Throttle taper near TopSpeed (smooth cruise without abrupt surging)
-Tune.SLimitBrake = false -- Taper drive torque smoothly instead of slamming service brakes at TopSpeed
+Tune.SLimitGradient = 6 -- Smoothly holds 170 km/h ceiling without brake-slam oscillation
+Tune.SLimitBrake = false -- Taper drive torque smoothly at top speed instead of slamming brakes
 
 --[[Brakes]]
 Tune.ExitBrake = true -- Set to false if you don't want the car to apply the parking brake when exiting
@@ -635,9 +578,9 @@ Tune.ABSLimit = 0 -- Minimum amount of torque at max reduction (in percent)
 -- Forces
 Tune.BrakeForce = Config.BrakeForce -- Total brake force in kgf
 Tune.BrakeBias = 0.65 -- Brake bias towards the front, percentage (1 = Front, 0 = Rear, .5 = 50/50)
-Tune.PBrakeForce = 5000 -- Handbrake force in kgf (strong parking lock)
-Tune.PBrakeBias = 0.5 -- Handbrake bias towards the front, percentage (1 = Front, 0 = Rear, .5 = 50/50)
-Tune.EBrakeForce = 2400 -- Engine braking force at redline in kgf
+Tune.PBrakeForce = 1000 -- Handbrake force in kgf
+Tune.PBrakeBias = 0 -- Handbrake bias towards the front, percentage (1 = Front, 0 = Rear, .5 = 50/50)
+Tune.EBrakeForce = 1600 -- Engine braking force at redline in kgf
 
 --[[[Default Controls]]
 --Peripheral Deadzones
@@ -700,5 +643,20 @@ Tune.Controls = {
 	ContlrToggleABS = Enum.KeyCode.Unknown,
 	ContlrToggleCS = Enum.KeyCode.Unknown,
 }
+
+--[[Wall-Climb & Stunt Settings]]
+Tune.WallClimbEnabled = Config.WallClimbEnabled
+Tune.WallClimbMinHeight = Config.WallClimbMinHeight
+Tune.WallClimbProbeDist = Config.WallClimbProbeDist
+Tune.WallClimbAdhesionForce = Config.WallClimbAdhesionForce
+Tune.WallClimbDriveSpeed = Config.WallClimbDriveSpeed
+Tune.WallClimbPitchRate = Config.WallClimbPitchRate
+Tune.WallClimbCrestUpBoost = Config.WallClimbCrestUpBoost
+Tune.WallClimbCrestForwardBoost = Config.WallClimbCrestForwardBoost
+
+--[[Airborne Stunt Control]]
+Tune.AirPitchDownSpeed = Config.AirPitchDownSpeed
+Tune.AirPitchUpSpeed = Config.AirPitchUpSpeed
+Tune.AirRollSpeed = Config.AirRollSpeed
 
 return Tune
