@@ -47,6 +47,12 @@ globalTypes.d.luau
 *.fbx
 *.zip
 *.rar
+*.glb
+*.dae
+*.obj
+*.mtl
+*.fbm/
+assets/models/**/raw_download/
 
 # Ad-hoc Root Debug Dumps & Scratch Scripts
 clean_*.luau
