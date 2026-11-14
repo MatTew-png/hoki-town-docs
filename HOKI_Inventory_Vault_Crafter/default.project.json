@@ -1,0 +1,120 @@
+{
+  "name": "HOKI_TOWN_Inventory_Vault_Crafter",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "ItemDatabase": {
+        "$path": "src/ReplicatedStorage/ItemDatabase.luau"
+      },
+      "InventoryMVC": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "Core": {
+          "$path": "src/ReplicatedStorage/InventoryMVC/Core"
+        },
+        "Gateway": {
+          "$path": "src/ReplicatedStorage/InventoryMVC/Gateway",
+          "$ignoreUnknownInstances": true,
+          "InventoryGateway": {
+            "$className": "RemoteEvent"
+          }
+        },
+        "Logic": {
+          "$path": "src/ReplicatedStorage/InventoryMVC/Logic"
+        },
+        "Visualizer": {
+          "$path": "src/ReplicatedStorage/InventoryMVC/Visualizer"
+        }
+      },
+      "VaultMVC": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "Gateway": {
+          "$path": "src/ReplicatedStorage/VaultMVC/Gateway",
+          "$ignoreUnknownInstances": true,
+          "VaultChannel": {
+            "$className": "RemoteEvent"
+          }
+        },
+        "Logic": {
+          "$path": "src/ReplicatedStorage/VaultMVC/Logic"
+        },
+        "Visualizer": {
+          "$path": "src/ReplicatedStorage/VaultMVC/Visualizer"
+        }
+      },
+      "CrafterMVC": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "Gateway": {
+          "$path": "src/ReplicatedStorage/CrafterMVC/Gateway",
+          "$ignoreUnknownInstances": true,
+          "CrafterChannel": {
+            "$className": "RemoteEvent"
+          }
+        },
+        "Logic": {
+          "$path": "src/ReplicatedStorage/CrafterMVC/Logic"
+        },
+        "Visualizer": {
+          "$path": "src/ReplicatedStorage/CrafterMVC/Visualizer"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "DataManager": {
+        "$path": "src/ServerScriptService/DataManager.luau"
+      },
+      "ServerMain": {
+        "$path": "src/ServerScriptService/ServerMain.server.luau"
+      },
+      "Systems": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "InventoryServerSystem": {
+          "$path": "src/ServerScriptService/Systems/InventoryServerSystem.luau"
+        },
+        "InventoryUseService": {
+          "$path": "src/ServerScriptService/Systems/InventoryUseService.luau"
+        },
+        "InventoryUseActionHandlers": {
+          "$path": "src/ServerScriptService/Systems/InventoryUseActionHandlers.luau"
+        },
+        "VaultServerSystem": {
+          "$path": "src/ServerScriptService/Systems/VaultServerSystem.luau"
+        },
+        "CrafterServerSystem": {
+          "$path": "src/ServerScriptService/Systems/CrafterServerSystem.luau"
+        }
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$ignoreUnknownInstances": true,
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$ignoreUnknownInstances": true,
+        "ClientMain": {
+          "$path": "src/StarterPlayerScripts/ClientMain.client.luau"
+        },
+        "Systems": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true,
+          "InventoryClientSystem": {
+            "$path": "src/StarterPlayerScripts/Systems/InventoryClientSystem.luau"
+          },
+          "VaultClientSystem": {
+            "$path": "src/StarterPlayerScripts/Systems/VaultClientSystem.luau"
+          },
+          "CrafterClientSystem": {
+            "$path": "src/StarterPlayerScripts/Systems/CrafterClientSystem.luau"
+          }
+        }
+      }
+    }
+  }
+}

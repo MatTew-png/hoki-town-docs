@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HOKI TOWN // Signature UI Concept Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-canvas: #06070a;
+      --bg-panel: #0e1016;
+      --bg-panel-2: #141821;
+      --bg-slot: #0a0c11;
+      --accent: #dca203;
+      --accent-bright: #f7cf46;
+      --accent-soft: rgba(220, 162, 3, 0.16);
+      --accent-text: #08090c;
+      --secondary: #3b82f6;
+      --ok: #4ade80;
+      --warn: #f87171;
+      --border: #282e3b;
+      --border-hi: #dca203;
+      --text-main: #f3f5f8;
+      --text-muted: #939cad;
+      --chamfer: 14px;
+      --tab-skew: -10deg;
+      --grid-color: rgba(255, 255, 255, 0.025);
+      --shadow-glow: 0 0 28px rgba(220, 162, 3, 0.14);
+    }
+
+    body[data-theme="tactical"] {
+      --bg-panel: #0b1017;
+      --bg-panel-2: #111923;
+      --bg-slot: #070b10;
+      --accent: #22d3ee;
+      --accent-bright: #67e8f9;
+      --accent-soft: rgba(34, 211, 238, 0.14);
+      --accent-text: #041014;
+      --secondary: #f59e0b;
+      --border: #1e2d3d;
+      --border-hi: #22d3ee;
+      --chamfer: 8px;
+      --tab-skew: 0deg;
+      --grid-color: rgba(34, 211, 238, 0.045);
+      --shadow-glow: 0 0 28px rgba(34, 211, 238, 0.14);
+    }
+
+    body[data-theme="street"] {
+      --bg-panel: #0d0d11;
+      --bg-panel-2: #181820;
+      --bg-slot: #09090c;
+      --accent: #a3e635;
+      --accent-bright: #d9f99d;
+      --accent-soft: rgba(163, 230, 53, 0.16);
+      --accent-text: #070a02;
+      --secondary: #eab308;
+      --border: #2c2c38;
+      --border-hi: #a3e635;
+      --chamfer: 18px;
+      --tab-skew: -12deg;
+      --grid-color: rgba(163, 230, 53, 0.03);
+      --shadow-glow: 0 0 30px rgba(163, 230, 53, 0.16);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Noto Sans Thai", "Rajdhani", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 20% 15%, var(--accent-soft), transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(255,255,255,0.03), transparent 40%),
+        var(--bg-canvas);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mono { font-family: "JetBrains Mono", monospace; }
+    .display { font-family: "Rajdhani", "Noto Sans Thai", sans-serif; }
+
+    /* Clip-path chamfer helpers */
+    .chamfer-box {
+      clip-path: polygon(
+        var(--chamfer) 0, 100% 0,
+        100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%,
+        0 100%, 0 var(--chamfer)
+      );
+    }
+
+    .chamfer-sm {
+      clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    }
+
+    /* Top Control Studio Bar */
+    .studio-bar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(8, 10, 14, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-tag {
+      background: var(--accent);
+      color: var(--accent-text);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      transform: skewX(var(--tab-skew));
+    }
+
+    .brand-tag span { display: inline-block; transform: skewX(calc(var(--tab-skew) * -1)); }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .control-groups {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .seg-group {
+      display: flex;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .seg-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .seg-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.04); }
+    .seg-btn.active {
+      background: var(--accent);
+      color: var(--accent-text);
+      font-weight: 700;
+    }
+
+    .theme-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Stage Container (16:9 Game Viewport Simulation) */
+    .stage-wrap {
+      flex: 1;
+      padding: 18px 20px 28px;
+      max-width: 1480px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .theme-note-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      font-size: 13px;
+    }
+
+    .game-stage {
+      position: relative;
+      width: 100%;
+      min-height: 670px;
+      background:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 35%, rgba(28, 35, 50, 0.45), rgba(6, 7, 10, 0.96));
+      background-size: 28px 28px, 28px 28px, 100% 100%;
+      border: 1px solid var(--border);
+      padding: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* Corner decorative brackets on game stage */
+    .stage-corner {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: var(--accent);
+      border-style: solid;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .sc-tl { top: 8px; left: 8px; border-width: 2px 0 0 2px; }
+    .sc-tr { top: 8px; right: 8px; border-width: 2px 2px 0 0; }
+    .sc-bl { bottom: 8px; left: 8px; border-width: 0 0 2px 2px; }
+    .sc-br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+    /* Layout 1: Inventory + Existing CharacterAndStatus + HotbarHUD */
+    .inv-layout {
+      display: grid;
+      grid-template-columns: 1fr 295px;
+      gap: 22px;
+      min-height: 530px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 980px) {
+      .inv-layout { grid-template-columns: 1fr; }
+    }
+
+    /* New Signature Panel */
+    .hoki-panel {
+      position: relative;
+      background: linear-gradient(165deg, var(--bg-panel-2), var(--bg-panel));
+      border: 1px solid var(--border);
+      padding: 1px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+
+    .hoki-panel-inner {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 16px 18px;
+      gap: 14px;
+      position: relative;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .panel-header::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -1px;
+      width: 110px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-emblem {
+      width: 6px;
+      height: 32px;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .header-kicker {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .telemetry-pill {
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .telemetry-pill strong { color: var(--accent); }
+
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--border);
+      background: var(--bg-slot);
+      color: var(--text-muted);
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .close-btn:hover { border-color: var(--warn); color: var(--warn); }
+
+    /* Toolbar: Categories + Search */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .cat-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .cat-pill {
+      border: 1px solid var(--border);
+      background: var(--bg-slot);
+      color: var(--text-muted);
+      padding: 7px 15px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transform: skewX(var(--tab-skew));
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .cat-pill span {
+      display: inline-block;
+      transform: skewX(calc(var(--tab-skew) * -1));
+    }
+
+    .cat-pill:hover {
+      border-color: var(--accent);
+      color: var(--text-main);
+      transform: skewX(var(--tab-skew)) translateY(-1px);
+    }
+
+    .cat-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-text);
+      box-shadow: 0 4px 16px var(--accent-soft);
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 220px;
+      flex: 0 1 260px;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 8px 12px 8px 34px;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box input:focus { border-color: var(--accent); }
+
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    /* Inventory Grid + Action Chooser Drawer */
+    .inv-body {
+      display: grid;
+      grid-template-columns: 1fr 225px;
+      gap: 14px;
+      flex: 1;
+      min-height: 320px;
+    }
+
+    @media (max-width: 720px) {
+      .inv-body { grid-template-columns: 1fr; }
+    }
+
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 10px;
+      align-content: start;
+      padding-right: 4px;
+      max-height: 365px;
+      overflow-y: auto;
+    }
+
+    .item-card {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35)), var(--bg-slot);
+      border: 1px solid var(--border);
+      padding: 10px 9px 9px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s, box-shadow 0.18s;
+      user-select: none;
+    }
+
+    .item-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 10px;
+      width: 34px;
+      height: 3px;
+      background: var(--border);
+      transition: background 0.18s, width 0.18s;
+    }
+
+    .item-card[data-cat="Weapon"]::before { background: #f59e0b; }
+    .item-card[data-cat="Food"]::before { background: #4ade80; }
+    .item-card[data-cat="use"]::before { background: #38bdf8; }
+    .item-card[data-cat="Currency"]::before { background: #facc15; }
+
+    .item-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .item-card.selected {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, var(--accent-soft), rgba(0,0,0,0.45)), var(--bg-slot);
+      box-shadow: 0 0 0 1px var(--accent), 0 8px 20px rgba(0,0,0,0.45);
+    }
+
+    .item-card.selected::before { width: 65%; background: var(--accent); }
+
+    .card-badge-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+    }
+
+    .slot-badge {
+      background: var(--accent);
+      color: var(--accent-text);
+      font-weight: 800;
+      padding: 1px 6px;
+      font-size: 10px;
+    }
+
+    .qty-tag {
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .item-card.selected .qty-tag { color: var(--accent-bright); }
+
+    .icon-stage {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .item-name {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.25;
+      color: var(--text-main);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Right Sub-Drawer inside Inventory (Replaces floating blind Chooser) */
+    .inspector-drawer {
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .inspector-top {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .inspector-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .inspector-type {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+    }
+
+    .inspector-name { font-size: 16px; font-weight: 800; }
+
+    .hotbar-bind-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+    }
+
+    .bind-btn {
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 0;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .bind-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .bind-btn.bound { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+    .action-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .cta-btn {
+      border: 0;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      color: var(--accent-text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s, filter 0.15s;
+    }
+
+    .cta-btn:hover { transform: translateY(-1px); filter: brightness(1.07); }
+    .cta-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    .ghost-btn {
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .ghost-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .ghost-btn.danger:hover:not(:disabled) { border-color: var(--warn); color: var(--warn); }
+    .ghost-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* Existing Studio Preserved Right Panel: CharacterAndStatus */
+    .preserved-char-panel {
+      position: relative;
+      background: rgba(0, 0, 0, 0.92);
+      border: 1px solid rgba(220, 162, 3, 0.35);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .preserved-badge {
+      position: absolute;
+      top: -10px;
+      right: 12px;
+      background: #171a22;
+      border: 1px solid #dca203;
+      color: #f7cf46;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      letter-spacing: 0.06em;
+    }
+
+    .char-viewport-mock {
+      flex: 1;
+      min-height: 290px;
+      background: radial-gradient(circle at 50% 45%, rgba(220,162,3,0.12), rgba(10,10,12,0.95) 70%);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .char-status-box {
+      background: #070709;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+
+    .char-status-gold-bar {
+      background: linear-gradient(90deg, rgb(220, 162, 3), rgb(172, 120, 0));
+      color: #09090b;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .char-status-rows {
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    /* Bottom Existing HotbarHUD Mockup */
+    .hotbar-dock {
+      margin: 18px auto 0;
+      width: fit-content;
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(5, 6, 8, 0.88);
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .hotbar-slot {
+      width: 64px;
+      height: 64px;
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .hotbar-slot.active-slot {
+      border-color: rgb(226, 190, 6);
+      box-shadow: 0 0 0 1px rgb(226, 190, 6);
+    }
+
+    .hotbar-num {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: rgb(226, 190, 6);
+      color: #09090b;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 6px;
+    }
+
+    /* Layout 2: VAULT CHEST */
+    .vault-grid {
+      display: grid;
+      grid-template-columns: 1fr 230px 1fr;
+      gap: 14px;
+      min-height: 460px;
+    }
+    @media (max-width: 960px) {
+      .vault-grid { grid-template-columns: 1fr; }
+    }
+
+    .vault-pane {
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pane-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .vault-transfer-center {
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .qty-stepper {
+      display: grid;
+      grid-template-columns: 36px 1fr 36px 46px;
+      gap: 4px;
+    }
+
+    .qty-stepper button, .qty-stepper input {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      text-align: center;
+      padding: 7px 4px;
+      cursor: pointer;
+    }
+
+    /* Layout 3: CRAFTING TABLE */
+    .crafter-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 16px;
+      min-height: 460px;
+    }
+    @media (max-width: 880px) {
+      .crafter-grid { grid-template-columns: 1fr; }
+    }
+
+    .recipe-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 10px;
+      align-content: start;
+    }
+
+    .recipe-card {
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: 0.16s;
+    }
+    .recipe-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .recipe-card.selected {
+      border-color: var(--accent);
+      background: linear-gradient(160deg, var(--accent-soft), var(--bg-slot));
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      width: fit-content;
+    }
+    .status-pill.ready { background: rgba(74, 222, 128, 0.14); color: var(--ok); border: 1px solid rgba(74, 222, 128, 0.35); }
+    .status-pill.lack { background: rgba(248, 113, 113, 0.14); color: var(--warn); border: 1px solid rgba(248, 113, 113, 0.35); }
+
+    .ing-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    /* Layout 4: SVG Kit Preview */
+    .kit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 14px;
+    }
+
+    .kit-card {
+      background: var(--bg-slot);
+      border: 1px solid var(--border);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .kit-preview {
+      height: 150px;
+      background: radial-gradient(circle, rgba(255,255,255,0.03), transparent), #06070a;
+      border: 1px dashed var(--border);
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+
+    .kit-preview img { max-width: 100%; max-height: 122px; }
+
+    .toast-bar {
+      position: fixed;
+      bottom: 18px;
+      right: 22px;
+      z-index: 80;
+      background: var(--bg-panel-2);
+      border: 1px solid var(--accent);
+      padding: 10px 16px;
+      font-size: 13px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: 0.22s;
+    }
+    .toast-bar.show { opacity: 1; transform: translateY(0); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body data-theme="apex">
+  <header class="studio-bar">
+    <div class="brand-lockup">
+      <div class="brand-tag chamfer-sm"><span>HOKI TOWN</span></div>
+      <div>
+        <div class="brand-title">SIGNATURE UI CONCEPT STUDIO</div>
+        <div class="brand-sub">เปรียบเทียบ 3 สไตล์ + ทดลองใช้งาน Inventory / Vault / Crafter จริง (คงกรอบ Character ด้านขวาไว้ตามเดิม)</div>
+      </div>
+    </div>
+
+    <div class="control-groups">
+      <div class="seg-group" id="themeSwitcher" title="สลับอารมณ์สีและรูปทรงกรอบ">
+        <button class="seg-btn active" data-theme="apex">
+          <span class="theme-dot" style="background:#DCA203"></span> A: Street Apex (ดำ-ทอง)
+        </button>
+        <button class="seg-btn" data-theme="tactical">
+          <span class="theme-dot" style="background:#22D3EE"></span> B: Midnight Tactical
+        </button>
+        <button class="seg-btn" data-theme="street">
+          <span class="theme-dot" style="background:#A3E635"></span> C: Neo-HOKI Street
+        </button>
+      </div>
+
+      <div class="seg-group" id="screenSwitcher">
+        <button class="seg-btn active" data-screen="inventory">01 Inventory</button>
+        <button class="seg-btn" data-screen="vault">02 Vault Chest</button>
+        <button class="seg-btn" data-screen="crafter">03 Crafter</button>
+        <button class="seg-btn" data-screen="svgkit">04 SVG Kit (6 ชิ้น)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage-wrap">
+    <div class="theme-note-banner chamfer-sm" id="themeBanner">
+      <div id="themeDesc">
+        <strong>A — Street Apex (แนะนำ):</strong> คาร์บอนดำตัดมุม 45° + สีทอง HOKI Gold <code class="mono">#DCA203</code> เข้าชุดกับ <code class="mono">CharacterAndStatus</code> ด้านขวาและ <code class="mono">HotbarHUD</code> ด้านล่างทันที
+      </div>
+      <div class="mono" style="font-size:11px; color:var(--text-muted)">
+        CLICK ITEM CARDS / DEPOSIT / CRAFT TO TEST UX
+      </div>
+    </div>
+
+    <!-- ===================================== -->
+    <!-- SCREEN 1: INVENTORY + CHARACTER PANEL -->
+    <!-- ===================================== -->
+    <section class="game-stage" id="screen-inventory">
+      <div class="stage-corner sc-tl"></div><div class="stage-corner sc-tr"></div>
+      <div class="stage-corner sc-bl"></div><div class="stage-corner sc-br"></div>
+
+      <div class="inv-layout">
+        <!-- NEW OVERHAULED LEFT STORAGE WINDOW -->
+        <div class="hoki-panel chamfer-box">
+          <div class="hoki-panel-inner">
+            <div class="panel-header">
+              <div class="header-left">
+                <div class="header-emblem"></div>
+                <div>
+                  <div class="header-kicker mono">HOKI // INV.SYS v2.4</div>
+                  <div class="header-title">คลังสัมภาระ &amp; อาวุธ</div>
+                </div>
+              </div>
+              <div class="header-right">
+                <div class="telemetry-pill mono">CAPACITY <strong id="invCountLabel">10 / 60</strong></div>
+                <button class="close-btn chamfer-sm" onclick="toast('กด F2 หรือ X เพื่อปิดกระเป๋า')">✕</button>
+              </div>
+            </div>
+
+            <div class="toolbar">
+              <div class="cat-tabs" id="invTabs">
+                <button class="cat-pill active" data-cat="All"><span>ทั้งหมด</span></button>
+                <button class="cat-pill" data-cat="Weapon"><span>อาวุธ</span></button>
+                <button class="cat-pill" data-cat="Foods"><span>อาหาร &amp; ยา</span></button>
+                <button class="cat-pill" data-cat="General"><span>วัสดุ &amp; เงิน</span></button>
+              </div>
+              <div class="search-box">
+                <span class="search-icon">⌕</span>
+                <input id="invSearch" type="text" placeholder="ค้นหาไอเทม (เช่น เกราะ, มีด, สายไฟ)..." />
+              </div>
+            </div>
+
+            <div class="inv-body">
+              <div class="item-grid" id="invGrid"></div>
+
+              <!-- Unified Action Chooser Drawer (No awkward overlapping popup) -->
+              <aside class="inspector-drawer chamfer-sm" id="invInspector"></aside>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRESERVED RIGHT PANEL FROM STUDIO -->
+        <aside class="preserved-char-panel">
+          <div class="preserved-badge mono">KEEP STUDIO ORIGINAL ✓</div>
+          <div class="char-viewport-mock">
+            <svg width="110" height="160" viewBox="0 0 110 160" fill="none">
+              <rect x="37" y="14" width="36" height="34" rx="6" fill="#2A2F3A" stroke="#DCA203" stroke-width="1.5"/>
+              <rect x="27" y="54" width="56" height="58" rx="4" fill="#1D222C" stroke="#475569"/>
+              <rect x="8" y="56" width="15" height="50" rx="4" fill="#1D222C" stroke="#475569"/>
+              <rect x="87" y="56" width="15" height="50" rx="4" fill="#1D222C" stroke="#475569"/>
+              <rect x="30" y="116" width="22" height="38" rx="4" fill="#171B24" stroke="#475569"/>
+              <rect x="58" y="116" width="22" height="38" rx="4" fill="#171B24" stroke="#475569"/>
+              <circle cx="48" cy="30" r="2.5" fill="#DCA203"/>
+              <circle cx="62" cy="30" r="2.5" fill="#DCA203"/>
+            </svg>
+            <div class="mono" style="font-size:11px; color:#939cad; margin-top:8px;">CharacterViewport (268×341)</div>
+          </div>
+
+          <div class="char-status-box">
+            <div class="char-status-gold-bar">
+              <span>newlolmin</span>
+              <span class="mono">ID #104</span>
+            </div>
+            <div class="char-status-rows">
+              <div><div style="color:#939cad;font-size:10px">CASH</div><strong class="mono" id="hudCash" style="color:#F7CF46">฿ 4,900</strong></div>
+              <div><div style="color:#939cad;font-size:10px">BANK</div><strong class="mono">฿ 28,500</strong></div>
+              <div><div style="color:#939cad;font-size:10px">HP / ARMOR</div><strong class="mono" id="hudVitals" style="color:#4ADE80">100 / 50</strong></div>
+              <div><div style="color:#939cad;font-size:10px">WEIGHT</div><strong class="mono">14.2 kg</strong></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- PRESERVED BOTTOM HOTBAR HUD -->
+      <div class="hotbar-dock chamfer-sm" id="hotbarDock"></div>
+    </section>
+
+    <!-- ===================================== -->
+    <!-- SCREEN 2: VAULT CHEST                 -->
+    <!-- ===================================== -->
+    <section class="game-stage hidden" id="screen-vault">
+      <div class="stage-corner sc-tl"></div><div class="stage-corner sc-tr"></div>
+      <div class="stage-corner sc-bl"></div><div class="stage-corner sc-br"></div>
+
+      <div class="hoki-panel chamfer-box">
+        <div class="hoki-panel-inner">
+          <div class="panel-header">
+            <div class="header-left">
+              <div class="header-emblem"></div>
+              <div>
+                <div class="header-kicker mono">HOKI_VAULT_CHEST // MAINVault</div>
+                <div class="header-title">HOKI VAULT — ตู้เซฟเก็บของ</div>
+              </div>
+            </div>
+            <div class="header-right">
+              <div class="telemetry-pill mono">VAULT SLOTS <strong id="vaultCapLabel">0 / 60</strong></div>
+              <button class="close-btn chamfer-sm" onclick="toast('ปิดหน้าต่าง Vault แล้ว')">✕</button>
+            </div>
+          </div>
+
+          <div class="vault-grid">
+            <div class="vault-pane chamfer-sm">
+              <div class="pane-head">
+                <span>🎒 กระเป๋าของคุณ (Backpack)</span>
+                <span class="mono" style="color:var(--accent)" id="bpPaneCount">0 items</span>
+              </div>
+              <div class="item-grid" id="vaultBpGrid" style="max-height:360px"></div>
+            </div>
+
+            <div class="vault-transfer-center chamfer-sm">
+              <div class="mono" style="font-size:10px; color:var(--accent); letter-spacing:0.12em">TRANSFER CONTROL</div>
+              <div id="vaultSelectedInfo" style="padding:10px; background:var(--bg-panel); border:1px solid var(--border); font-size:13px;">
+                คลิกไอเทมซ้ายหรือขวาเพื่อโอนย้าย
+              </div>
+
+              <div class="qty-stepper">
+                <button onclick="stepVaultQty(-1)">-</button>
+                <input id="vaultQtyInput" type="number" value="1" min="1" />
+                <button onclick="stepVaultQty(1)">+</button>
+                <button onclick="setVaultMax()" style="color:var(--accent)">MAX</button>
+              </div>
+
+              <button class="cta-btn chamfer-sm" id="btnDeposit" onclick="transferVault('deposit')">ฝากเข้าตู้เซฟ (Deposit →)</button>
+              <button class="ghost-btn chamfer-sm" id="btnWithdraw" onclick="transferVault('withdraw')">← ถอนใส่กระเป๋า (Withdraw)</button>
+              <div id="vaultStatus" class="mono" style="font-size:11px; color:var(--text-muted); text-align:center">พร้อมใช้งาน Vault</div>
+            </div>
+
+            <div class="vault-pane chamfer-sm">
+              <div class="pane-head">
+                <span>🔐 ตู้เซฟ HOKI VAULT</span>
+                <span class="mono" style="color:var(--accent)" id="vaultPaneCount">0 stacks</span>
+              </div>
+              <div class="item-grid" id="vaultChestGrid" style="max-height:360px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================== -->
+    <!-- SCREEN 3: CRAFTING TABLE              -->
+    <!-- ===================================== -->
+    <section class="game-stage hidden" id="screen-crafter">
+      <div class="stage-corner sc-tl"></div><div class="stage-corner sc-tr"></div>
+      <div class="stage-corner sc-bl"></div><div class="stage-corner sc-br"></div>
+
+      <div class="hoki-panel chamfer-box">
+        <div class="hoki-panel-inner">
+          <div class="panel-header">
+            <div class="header-left">
+              <div class="header-emblem"></div>
+              <div>
+                <div class="header-kicker mono">HOKI_CRAFTER // STATION: GENERAL</div>
+                <div class="header-title">HOKI CRAFTER — โต๊ะคราฟต์อุปกรณ์</div>
+              </div>
+            </div>
+            <div class="header-right">
+              <div class="cat-tabs" id="crafterTabs">
+                <button class="cat-pill active" data-ccat="All"><span>ทั้งหมด</span></button>
+                <button class="cat-pill" data-ccat="Weapon"><span>อาวุธ</span></button>
+                <button class="cat-pill" data-ccat="Consumable"><span>เกราะ &amp; ยา</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="crafter-grid">
+            <div class="vault-pane chamfer-sm">
+              <div class="pane-head">
+                <span>📐 แบบแปลนการสร้าง (Recipes)</span>
+                <span class="mono" style="color:var(--text-muted)">6 แบบ</span>
+              </div>
+              <div class="recipe-list" id="recipeList"></div>
+            </div>
+
+            <div class="vault-pane chamfer-sm" id="craftDetailPane"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================== -->
+    <!-- SCREEN 4: SVG KIT INSPECTOR           -->
+    <!-- ===================================== -->
+    <section class="game-stage hidden" id="screen-svgkit">
+      <div class="stage-corner sc-tl"></div><div class="stage-corner sc-tr"></div>
+      <div class="stage-corner sc-bl"></div><div class="stage-corner sc-br"></div>
+
+      <div class="hoki-panel chamfer-box">
+        <div class="hoki-panel-inner">
+          <div class="panel-header">
+            <div class="header-left">
+              <div class="header-emblem"></div>
+              <div>
+                <div class="header-kicker mono">VECTOR SOURCE // 9-SLICE READY</div>
+                <div class="header-title">ชุดไฟล์ SVG ยูนีคของ HOKI TOWN (ลากเข้า Figma ได้เลย)</div>
+              </div>
+            </div>
+            <div class="telemetry-pill mono">PATH: <strong>ui_concept/svg/</strong></div>
+          </div>
+
+          <div class="kit-grid" id="svgKitGrid"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-bar chamfer-sm" id="toastBar"></div>
+
+  <script>
+    // Real HOKI TOWN ItemDatabase + CrafterConfig mirror for realistic interactive testing
+    const ITEM_CATALOG = {
+      Pool:        { Name: "Pool", Type: "Weapon", CanGive: false, CanLeave: false, Icon: "cue" },
+      BottleBasic: { Name: "Basic Bottle", Type: "Weapon", CanGive: false, CanLeave: false, Icon: "bottle" },
+      DaggerBasic: { Name: "Basic Dagger", Type: "Weapon", CanGive: false, CanLeave: false, Icon: "dagger" },
+      M9Basic:     { Name: "M9 Knife", Type: "Weapon", CanGive: false, CanLeave: false, Icon: "m9" },
+      cash:        { Name: "เงินสด", Type: "Currency", CanGive: true, CanLeave: true, Icon: "cash" },
+      wire:        { Name: "สายไฟ", Type: "general", CanGive: true, CanLeave: true, Icon: "wire" },
+      apple:       { Name: "แอปเปิ้ล", Type: "Food", CanGive: true, CanLeave: true, Icon: "apple" },
+      Strawberry:  { Name: "สตรอว์เบอร์รี", Type: "Food", CanGive: true, CanLeave: true, Icon: "berry" },
+      WolfPelt:    { Name: "หนังหมาป่า", Type: "general", CanGive: true, CanLeave: true, Icon: "pelt" },
+      WolfFang:    { Name: "เขี้ยวหมาป่า", Type: "general", CanGive: true, CanLeave: true, Icon: "fang" },
+      painkiller:  { Name: "ยาแก้ปวด", Type: "use", CanGive: true, CanLeave: true, Icon: "pill" },
+      armor:       { Name: "เกราะ", Type: "use", CanGive: true, CanLeave: true, Icon: "armor" },
+    };
+
+    const RECIPES = [
+      { RecipeId: "craft_armor", OutputItemId: "armor", OutputAmount: 1, Category: "Consumable", Description: "เกราะป้องกันตัว เสริมเกราะ +100 หน่วย", Ingredients: [{ ItemId: "wire", Amount: 2 }, { ItemId: "WolfPelt", Amount: 2 }] },
+      { RecipeId: "craft_painkiller", OutputItemId: "painkiller", OutputAmount: 1, Category: "Consumable", Description: "ยาแก้ปวดฉุกเฉิน ฟื้นฟูพลังชีวิต +35 HP", Ingredients: [{ ItemId: "apple", Amount: 2 }, { ItemId: "Strawberry", Amount: 1 }] },
+      { RecipeId: "craft_bottle", OutputItemId: "BottleBasic", OutputAmount: 1, Category: "Weapon", Description: "ขวดปากฉลาม อาวุธประชิดพื้นฐานน้ำหนักเบา", Ingredients: [{ ItemId: "wire", Amount: 2 }, { ItemId: "cash", Amount: 100 }] },
+      { RecipeId: "craft_dagger", OutputItemId: "DaggerBasic", OutputAmount: 1, Category: "Weapon", Description: "มีดสั้นความเร็วสูง ตีขึ้นจากเขี้ยวหมาป่า", Ingredients: [{ ItemId: "WolfFang", Amount: 2 }, { ItemId: "wire", Amount: 2 }, { ItemId: "cash", Amount: 250 }] },
+      { RecipeId: "craft_pool", OutputItemId: "Pool", OutputAmount: 1, Category: "Weapon", Description: "ไม้คิวพูล อาวุธระยะประชิดแรงปะทะสูง", Ingredients: [{ ItemId: "wire", Amount: 3 }, { ItemId: "WolfPelt", Amount: 1 }, { ItemId: "cash", Amount: 350 }] },
+      { RecipeId: "craft_m9", OutputItemId: "M9Basic", OutputAmount: 1, Category: "Weapon", Description: "มีดแทคติคอล M9 ระดับสูงสำหรับสายต่อสู้", Ingredients: [{ ItemId: "WolfFang", Amount: 4 }, { ItemId: "WolfPelt", Amount: 2 }, { ItemId: "wire", Amount: 4 }, { ItemId: "cash", Amount: 500 }] },
+    ];
+
+    const SVG_ASSETS = [
+      { file: "svg/hoki_panel_chamfer_frame.svg", name: "Main Window Frame", slice: "SliceCenter: 64, 64, 448, 256", desc: "กรอบหน้าต่างหลักตัดมุม 45° + มุมแบร็กเก็ตทอง" },
+      { file: "svg/hoki_item_card_slot.svg", name: "Item Card Slot", slice: "SliceCenter: 28, 36, 132, 164", desc: "การ์ดไอเทมมีแถบสีแยกประเภทด้านบน + มุมเฉียงล่างขวา" },
+      { file: "svg/hoki_tab_skew_pill.svg", name: "Slanted Tab Pill", slice: "UI Aspect / ImageButton", desc: "ปุ่มหมวดหมู่เอียงทรงสปอร์ตสำหรับ Filter Tabs" },
+      { file: "svg/hoki_header_bar.svg", name: "Tactical Header Bar", slice: "SliceCenter: 48, 8, 550, 56", desc: "หัวแถบชื่อหน้าต่างพร้อมเส้น Racing Stripe" },
+      { file: "svg/hoki_cta_button.svg", name: "Primary CTA Button", slice: "SliceCenter: 24, 10, 210, 44", desc: "ปุ่มยืนยันหลัก ใช้/ฝาก/คราฟต์" },
+      { file: "svg/hoki_hotbar_hex_slot.svg", name: "Hotbar Octagon Slot", slice: "Square 1:1", desc: "ช่อง Hotbar 1-6 ทรงแปดเหลี่ยมพร้อมมุมตัวเลข" },
+    ];
+
+    const state = {
+      backpack: {
+        M9Basic: 1,
+        Pool: 1,
+        armor: 2,
+        painkiller: 3,
+        wire: 8,
+        WolfPelt: 4,
+        WolfFang: 5,
+        apple: 6,
+        Strawberry: 4,
+        cash: 4900,
+      },
+      vault: {
+        DaggerBasic: 1,
+        wire: 12,
+        WolfFang: 3,
+      },
+      hotbar: { 1: "M9Basic", 2: "Pool", 3: "armor", 4: "painkiller", 5: null, 6: null },
+      activeHotbar: 1,
+      invCat: "All",
+      invSearch: "",
+      selectedInvId: "M9Basic",
+      vaultSelectedSide: null,
+      vaultSelectedId: null,
+      vaultQty: 1,
+      crafterCat: "All",
+      selectedRecipeId: "craft_armor",
+      craftQty: 1,
+      armorVal: 50,
+    };
+
+    function itemSvg(kind, size = 34) {
+      const col = getComputedStyle(document.body).getPropertyValue("--accent").trim() || "#DCA203";
+      const shapes = {
+        m9: `<path d="M6 28 L19 15 L23 19 L10 32 Z" fill="${col}"/><path d="M18 14 L31 3 L31 11 L22 19 Z" fill="#E2E8F0"/>`,
+        dagger: `<path d="M8 28 L17 19 L20 22 L11 31 Z" fill="#94A3B8"/><path d="M17 18 L29 5 L26 20 Z" fill="${col}"/>`,
+        cue: `<path d="M5 31 L30 5" stroke="${col}" stroke-width="3.5" stroke-linecap="round"/><path d="M24 11 L30 5" stroke="#F8FAFC" stroke-width="2.5"/>`,
+        bottle: `<path d="M15 4 H21 V10 L25 15 V31 H11 V15 L15 10 Z" fill="rgba(74,222,128,0.35)" stroke="#4ADE80" stroke-width="1.8"/>`,
+        armor: `<path d="M8 8 L13 5 H23 L28 8 L26 16 L24 31 H12 L10 16 Z" fill="rgba(56,189,248,0.22)" stroke="#38BDF8" stroke-width="2"/><path d="M14 13 H22" stroke="${col}" stroke-width="2"/>`,
+        pill: `<rect x="7" y="12" width="22" height="12" rx="6" transform="rotate(-30 18 18)" fill="#F87171" stroke="#FFF" stroke-width="1.5"/>`,
+        wire: `<circle cx="18" cy="18" r="10" stroke="${col}" stroke-width="2.5" stroke-dasharray="4 3"/><circle cx="18" cy="18" r="4" fill="#94A3B8"/>`,
+        pelt: `<path d="M9 9 L18 6 L27 9 L29 24 L18 30 L7 24 Z" fill="#785A3A" stroke="#C49A6C" stroke-width="1.6"/>`,
+        fang: `<path d="M13 6 C23 9 25 22 22 30 C16 24 14 15 13 6 Z" fill="#F1F5F9" stroke="${col}" stroke-width="1.6"/>`,
+        apple: `<circle cx="18" cy="20" r="9" fill="#EF4444"/><path d="M18 11 C18 7 22 6 24 7" stroke="#4ADE80" stroke-width="2.2"/>`,
+        berry: `<path d="M18 29 C11 26 10 15 18 13 C26 15 25 26 18 29 Z" fill="#FB7185"/><path d="M13 13 L18 9 L23 13" stroke="#4ADE80" stroke-width="2"/>`,
+        cash: `<rect x="5" y="10" width="26" height="16" rx="2" fill="#166534" stroke="#4ADE80" stroke-width="1.6"/><circle cx="18" cy="18" r="4" fill="#FACC15"/>`,
+      };
+      return `<svg width="${size}" height="${size}" viewBox="0 0 36 36" fill="none">${shapes[kind] || shapes.wire}</svg>`;
+    }
+
+    function toast(msg) {
+      const el = document.getElementById("toastBar");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove("show"), 2300);
+    }
+
+    function matchesCategory(itemType, cat) {
+      if (cat === "All") return true;
+      if (cat === "Weapon") return itemType === "Weapon";
+      if (cat === "Foods") return itemType === "Food" || itemType === "use";
+      if (cat === "General") return itemType === "general" || itemType === "Currency";
+      return true;
+    }
+
+    function hotbarNumFor(id) {
+      for (let i = 1; i <= 6; i++) {
+        if (state.hotbar[i] === id) return i;
+      }
+      return null;
+    }
+
+    function renderInventory() {
+      const grid = document.getElementById("invGrid");
+      const entries = Object.entries(state.backpack).filter(([, qty]) => qty > 0);
+      document.getElementById("invCountLabel").textContent = `${entries.length} / 60`;
+      document.getElementById("hudCash").textContent = `฿ ${(state.backpack.cash || 0).toLocaleString()}`;
+      document.getElementById("hudVitals").textContent = `100 / ${state.armorVal}`;
+
+      const filtered = entries.filter(([id]) => {
+        const info = ITEM_CATALOG[id];
+        if (!info) return false;
+        if (!matchesCategory(info.Type, state.invCat)) return false;
+        if (state.invSearch) {
+          const q = state.invSearch.toLowerCase();
+          return info.Name.toLowerCase().includes(q) || id.toLowerCase().includes(q);
+        }
+        return true;
+      });
+
+      grid.innerHTML = filtered.map(([id, qty]) => {
+        const info = ITEM_CATALOG[id];
+        const hb = hotbarNumFor(id);
+        const sel = state.selectedInvId === id ? "selected" : "";
+        return `
+          <div class="item-card chamfer-sm ${sel}" data-cat="${info.Type}" onclick="selectInv('${id}')">
+            <div class="card-badge-row mono">
+              <span>${hb ? `<span class="slot-badge">#${hb}</span>` : `<span style="color:var(--text-muted)">${info.Type.toUpperCase()}</span>`}</span>
+              <span class="qty-tag">x${qty.toLocaleString()}</span>
+            </div>
+            <div class="icon-stage chamfer-sm">${itemSvg(info.Icon, 36)}</div>
+            <div class="item-name" title="${info.Name}">${info.Name}</div>
+          </div>
+        `;
+      }).join("") || `<div style="color:var(--text-muted); padding:20px">ไม่พบไอเทมในหมวดนี้</div>`;
+
+      renderInspector();
+      renderHotbar();
+    }
+
+    function selectInv(id) {
+      state.selectedInvId = id;
+      renderInventory();
+    }
+
+    function renderInspector() {
+      const box = document.getElementById("invInspector");
+      const id = state.selectedInvId;
+      const qty = state.backpack[id] || 0;
+      const info = ITEM_CATALOG[id];
+      if (!info || qty <= 0) {
+        box.innerHTML = `<div style="color:var(--text-muted); font-size:13px">เลือกไอเทมทางซ้ายเพื่อดูคำสั่งใช้งาน / ผูก Hotbar</div>`;
+        return;
+      }
+
+      const hbButtons = [1,2,3,4,5,6].map(n => {
+        const bound = state.hotbar[n] === id ? "bound" : "";
+        return `<button class="bind-btn ${bound}" onclick="bindHotbar(${n}, '${id}')">${n}</button>`;
+      }).join("");
+
+      const canUse = info.Type === "Weapon" || info.Type === "Food" || info.Type === "use";
+      box.innerHTML = `
+        <div class="inspector-top">
+          <div class="inspector-preview">
+            <div class="icon-stage chamfer-sm">${itemSvg(info.Icon, 34)}</div>
+            <div>
+              <div class="inspector-type mono">${info.Type}</div>
+              <div class="inspector-name">${info.Name}</div>
+              <div class="mono" style="font-size:11px; color:var(--text-muted)">จำนวน: x${qty.toLocaleString()}</div>
+            </div>
+          </div>
+          <div>
+            <div class="mono" style="font-size:10px; color:var(--text-muted); margin-bottom:6px">ผูกปุ่มลัด HOTBAR (1-6)</div>
+            <div class="hotbar-bind-grid">${hbButtons}</div>
+          </div>
+        </div>
+        <div class="action-stack">
+          <button class="cta-btn chamfer-sm" ${canUse ? "" : "disabled"} onclick="useInvItem('${id}')">
+            ${info.Type === "Weapon" ? "ถือใช้งาน / Equip" : "ใช้งานไอเทม (Use)"}
+          </button>
+          <button class="ghost-btn chamfer-sm" ${info.CanGive ? "" : "disabled"} onclick="toast('เปิดรายชื่อผู้เล่นใกล้เคียงเพื่อส่งมอบ ${info.Name}')">
+            ส่งให้ผู้เล่นใกล้เคียง (Give)
+          </button>
+          <button class="ghost-btn danger chamfer-sm" ${info.CanLeave ? "" : "disabled"} onclick="toast('ทิ้ง ${info.Name} (Permanent Guard ทำงานอัตโนมัติ)')">
+            ทิ้งไอเทม (Drop)
+          </button>
+        </div>
+      `;
+    }
+
+    function bindHotbar(slot, id) {
+      for (let i = 1; i <= 6; i++) if (state.hotbar[i] === id) state.hotbar[i] = null;
+      state.hotbar[slot] = id;
+      toast(`ผูก ${ITEM_CATALOG[id].Name} เข้าช่อง Hotbar [${slot}] แล้ว`);
+      renderInventory();
+    }
+
+    function useInvItem(id) {
+      const info = ITEM_CATALOG[id];
+      if (id === "armor") {
+        state.backpack[id]--;
+        state.armorVal = Math.min(100, state.armorVal + 50);
+        toast("สวมเกราะแล้ว! Armor +50");
+      } else if (info.Type === "Food" || info.Type === "use") {
+        state.backpack[id]--;
+        toast(`ใช้งาน ${info.Name} สำเร็จ!`);
+      } else {
+        toast(`ถืออาวุธ ${info.Name} พร้อมใช้งาน`);
+      }
+      renderInventory();
+    }
+
+    function renderHotbar() {
+      const dock = document.getElementById("hotbarDock");
+      dock.innerHTML = [1,2,3,4,5,6].map(n => {
+        const id = state.hotbar[n];
+        const info = id && state.backpack[id] > 0 ? ITEM_CATALOG[id] : null;
+        const active = state.activeHotbar === n ? "active-slot" : "";
+        return `
+          <div class="hotbar-slot chamfer-sm ${active}" onclick="state.activeHotbar=${n}; renderHotbar()">
+            <span class="hotbar-num mono">${n}</span>
+            ${info ? itemSvg(info.Icon, 28) : `<span class="mono" style="font-size:10px; color:#333946">EMPTY</span>`}
+          </div>
+        `;
+      }).join("");
+    }
+
+    // VAULT RENDERING
+    function renderVault() {
+      const bpEntries = Object.entries(state.backpack).filter(([id, q]) => q > 0 && id !== "cash");
+      const vEntries = Object.entries(state.vault).filter(([, q]) => q > 0);
+      document.getElementById("bpPaneCount").textContent = `${bpEntries.length} stacks`;
+      document.getElementById("vaultPaneCount").textContent = `${vEntries.length} stacks`;
+      document.getElementById("vaultCapLabel").textContent = `${vEntries.length} / 60`;
+
+      const renderCards = (entries, side) => entries.map(([id, q]) => {
+        const info = ITEM_CATALOG[id];
+        const sel = state.vaultSelectedSide === side && state.vaultSelectedId === id ? "selected" : "";
+        return `
+          <div class="item-card chamfer-sm ${sel}" data-cat="${info.Type}" onclick="selectVault('${side}','${id}')">
+            <div class="card-badge-row mono"><span style="color:var(--text-muted)">${side.toUpperCase()}</span><span class="qty-tag">x${q}</span></div>
+            <div class="icon-stage chamfer-sm">${itemSvg(info.Icon, 32)}</div>
+            <div class="item-name">${info.Name}</div>
+          </div>
+        `;
+      }).join("") || `<div style="color:var(--text-muted); font-size:12px">ว่างเปล่า</div>`;
+
+      document.getElementById("vaultBpGrid").innerHTML = renderCards(bpEntries, "bp");
+      document.getElementById("vaultChestGrid").innerHTML = renderCards(vEntries, "vault");
+
+      const selInfo = document.getElementById("vaultSelectedInfo");
+      if (state.vaultSelectedId) {
+        const info = ITEM_CATALOG[state.vaultSelectedId];
+        const max = (state.vaultSelectedSide === "bp" ? state.backpack : state.vault)[state.vaultSelectedId] || 0;
+        selInfo.innerHTML = `<strong style="color:var(--accent)">${info.Name}</strong> <span class="mono">(มีอยู่ x${max})</span>`;
+      }
+      document.getElementById("vaultQtyInput").value = state.vaultQty;
+      document.getElementById("btnDeposit").disabled = state.vaultSelectedSide !== "bp";
+      document.getElementById("btnWithdraw").disabled = state.vaultSelectedSide !== "vault";
+    }
+
+    function selectVault(side, id) {
+      state.vaultSelectedSide = side;
+      state.vaultSelectedId = id;
+      state.vaultQty = 1;
+      renderVault();
+    }
+
+    function stepVaultQty(delta) {
+      state.vaultQty = Math.max(1, state.vaultQty + delta);
+      renderVault();
+    }
+
+    function setVaultMax() {
+      if (!state.vaultSelectedId) return;
+      const src = state.vaultSelectedSide === "bp" ? state.backpack : state.vault;
+      state.vaultQty = Math.max(1, src[state.vaultSelectedId] || 1);
+      renderVault();
+    }
+
+    function transferVault(dir) {
+      const id = state.vaultSelectedId;
+      if (!id) return;
+      const amt = Math.max(1, parseInt(document.getElementById("vaultQtyInput").value || "1", 10));
+      const from = dir === "deposit" ? state.backpack : state.vault;
+      const to = dir === "deposit" ? state.vault : state.backpack;
+      const move = Math.min(amt, from[id] || 0);
+      if (move <= 0) return;
+      from[id] -= move;
+      to[id] = (to[id] || 0) + move;
+      document.getElementById("vaultStatus").textContent = `${dir === "deposit" ? "ฝาก" : "ถอน"} ${ITEM_CATALOG[id].Name} x${move} สำเร็จ`;
+      toast(document.getElementById("vaultStatus").textContent);
+      if (from[id] <= 0) state.vaultSelectedId = null;
+      renderVault();
+      renderInventory();
+    }
+
+    // CRAFTER RENDERING
+    function maxCraftable(r) {
+      let m = 20;
+      for (const ing of r.Ingredients) {
+        m = Math.min(m, Math.floor((state.backpack[ing.ItemId] || 0) / ing.Amount));
+      }
+      return m;
+    }
+
+    function renderCrafter() {
+      const list = document.getElementById("recipeList");
+      const filtered = RECIPES.filter(r => state.crafterCat === "All" || r.Category === state.crafterCat);
+      list.innerHTML = filtered.map(r => {
+        const out = ITEM_CATALOG[r.OutputItemId];
+        const mc = maxCraftable(r);
+        const sel = state.selectedRecipeId === r.RecipeId ? "selected" : "";
+        return `
+          <div class="recipe-card chamfer-sm ${sel}" onclick="state.selectedRecipeId='${r.RecipeId}'; state.craftQty=1; renderCrafter()">
+            <div style="display:flex; align-items:center; gap:10px">
+              <div class="icon-stage chamfer-sm" style="width:44px;height:44px">${itemSvg(out.Icon, 26)}</div>
+              <div>
+                <div style="font-weight:700; font-size:13px">${out.Name}</div>
+                <div class="mono" style="font-size:10px; color:var(--text-muted)">${r.Category}</div>
+              </div>
+            </div>
+            <div class="status-pill mono ${mc > 0 ? "ready" : "lack"}">${mc > 0 ? `พร้อมสร้าง (x${mc})` : "วัตถุดิบไม่พอ"}</div>
+          </div>
+        `;
+      }).join("");
+
+      const r = RECIPES.find(x => x.RecipeId === state.selectedRecipeId) || filtered[0];
+      const out = ITEM_CATALOG[r.OutputItemId];
+      const mc = maxCraftable(r);
+      let canAll = true;
+      const ingHtml = r.Ingredients.map(ing => {
+        const ii = ITEM_CATALOG[ing.ItemId];
+        const own = state.backpack[ing.ItemId] || 0;
+        const req = ing.Amount * state.craftQty;
+        const ok = own >= req;
+        if (!ok) canAll = false;
+        return `
+          <div class="ing-row chamfer-sm">
+            <span style="display:flex;align-items:center;gap:8px">${itemSvg(ii.Icon, 22)} ${ii.Name}</span>
+            <span class="mono" style="font-weight:700; color:${ok ? "var(--ok)" : "var(--warn)"}">${own.toLocaleString()} / ${req.toLocaleString()}</span>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("craftDetailPane").innerHTML = `
+        <div class="pane-head">
+          <span>🛠️ รายละเอียดการคราฟต์</span>
+          <span class="mono" style="color:var(--accent)">MAX CRAFT: ${mc}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:10px; background:var(--bg-panel); border:1px solid var(--border)">
+          <div class="icon-stage chamfer-sm">${itemSvg(out.Icon, 36)}</div>
+          <div>
+            <div style="font-size:18px; font-weight:800">${out.Name} <span class="mono" style="color:var(--accent)">(x${r.OutputAmount * state.craftQty})</span></div>
+            <div style="font-size:12px; color:var(--text-muted)">${r.Description}</div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:7px; flex:1">${ingHtml}</div>
+        <div class="qty-stepper">
+          <button onclick="state.craftQty=Math.max(1,state.craftQty-1); renderCrafter()">-</button>
+          <input type="number" value="${state.craftQty}" readonly />
+          <button onclick="state.craftQty=Math.min(20,state.craftQty+1); renderCrafter()">+</button>
+          <button onclick="state.craftQty=Math.max(1,${mc}); renderCrafter()" style="color:var(--accent)">MAX</button>
+        </div>
+        <button class="cta-btn chamfer-sm" ${canAll ? "" : "disabled"} onclick="doCraft('${r.RecipeId}')">
+          ${canAll ? `เริ่มคราฟต์ ${out.Name} (x${state.craftQty})` : "วัตถุดิบในกระเป๋าไม่พอ"}
+        </button>
+      `;
+    }
+
+    function doCraft(rid) {
+      const r = RECIPES.find(x => x.RecipeId === rid);
+      for (const ing of r.Ingredients) {
+        if ((state.backpack[ing.ItemId] || 0) < ing.Amount * state.craftQty) return;
+      }
+      for (const ing of r.Ingredients) {
+        state.backpack[ing.ItemId] -= ing.Amount * state.craftQty;
+      }
+      state.backpack[r.OutputItemId] = (state.backpack[r.OutputItemId] || 0) + (r.OutputAmount * state.craftQty);
+      toast(`คราฟต์ ${ITEM_CATALOG[r.OutputItemId].Name} x${state.craftQty} สำเร็จ!`);
+      renderCrafter();
+      renderInventory();
+      renderVault();
+    }
+
+    function renderSvgKit() {
+      document.getElementById("svgKitGrid").innerHTML = SVG_ASSETS.map(a => `
+        <div class="kit-card chamfer-sm">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <strong>${a.name}</strong>
+            <span class="mono" style="font-size:10px; color:var(--accent)">${a.slice}</span>
+          </div>
+          <div class="kit-preview"><img src="${a.file}" alt="${a.name}" /></div>
+          <div style="font-size:12px; color:var(--text-muted)">${a.desc}</div>
+          <a class="ghost-btn chamfer-sm mono" style="text-align:center; text-decoration:none" href="${a.file}" download>⬇ Download .SVG (ลากลง Figma ได้เลย)</a>
+        </div>
+      `).join("");
+    }
+
+    // Event Bindings
+    const THEME_NOTES = {
+      apex: `<strong>A — Street Apex (แนะนำ):</strong> คาร์บอนดำตัดมุม 45° + สีทอง HOKI Gold <code class="mono">#DCA203</code> เข้าชุดกับ <code class="mono">CharacterAndStatus</code> ด้านขวาและ <code class="mono">HotbarHUD</code> ด้านล่างทันที`,
+      tactical: `<strong>B — Midnight Tactical:</strong> กราไฟต์ตัดขอบเรขาคณิต + สี Cyan <code class="mono">#22D3EE</code> เน้นความคมชัดข้อมูลเชิงลึก อ่านวัตถุดิบคราฟต์ไว`,
+      street: `<strong>C — Neo-HOKI Street:</strong> คอนทราสต์จัดจ้านสไตล์ RP แอ็กชันยุคใหม่ + แท็บเอียง <code class="mono">-12deg</code> สี Lime <code class="mono">#A3E635</code> สะดุดตาไม่ซ้ำใคร`,
+    };
+
+    document.getElementById("themeSwitcher").addEventListener("click", e => {
+      const btn = e.target.closest("[data-theme]");
+      if (!btn) return;
+      document.querySelectorAll("#themeSwitcher .seg-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.body.setAttribute("data-theme", btn.dataset.theme);
+      document.getElementById("themeDesc").innerHTML = THEME_NOTES[btn.dataset.theme];
+      renderInventory(); renderVault(); renderCrafter();
+    });
+
+    document.getElementById("screenSwitcher").addEventListener("click", e => {
+      const btn = e.target.closest("[data-screen]");
+      if (!btn) return;
+      document.querySelectorAll("#screenSwitcher .seg-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll("section.game-stage").forEach(s => s.classList.add("hidden"));
+      document.getElementById("screen-" + btn.dataset.screen).classList.remove("hidden");
+    });
+
+    document.getElementById("invTabs").addEventListener("click", e => {
+      const btn = e.target.closest("[data-cat]");
+      if (!btn) return;
+      document.querySelectorAll("#invTabs .cat-pill").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.invCat = btn.dataset.cat;
+      renderInventory();
+    });
+
+    document.getElementById("invSearch").addEventListener("input", e => {
+      state.invSearch = e.target.value.trim();
+      renderInventory();
+    });
+
+    document.getElementById("crafterTabs").addEventListener("click", e => {
+      const btn = e.target.closest("[data-ccat]");
+      if (!btn) return;
+      document.querySelectorAll("#crafterTabs .cat-pill").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.crafterCat = btn.dataset.ccat;
+      renderCrafter();
+    });
+
+    // Init
+    renderInventory();
+    renderVault();
+    renderCrafter();
+    renderSvgKit();
+  </script>
+</body>
+</html>

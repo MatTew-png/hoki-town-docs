@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 64" fill="none">
+  <!-- HOKI TOWN // Tactical Header Bar -->
+  <defs>
+    <linearGradient id="hdrGrad" x1="0" y1="0" x2="600" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#171A21"/>
+      <stop offset="65%" stop-color="#111318"/>
+      <stop offset="100%" stop-color="#0B0D11" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 8 L8 0 H584 L600 16 V56 L592 64 H0 Z" fill="url(#hdrGrad)" stroke="#2A2F3A" stroke-width="1.5"/>
+  <!-- Left emblem wing -->
+  <path d="M0 8 L8 0 H18 L18 64 H0 Z" fill="#DCA203"/>
+  <!-- Diagonal racing stripes -->
+  <path d="M480 0 H494 L478 64 H464 Z" fill="#DCA203" fill-opacity="0.16"/>
+  <path d="M502 0 H512 L496 64 H486 Z" fill="#DCA203" fill-opacity="0.10"/>
+  <path d="M520 0 H526 L510 64 H504 Z" fill="#DCA203" fill-opacity="0.06"/>
+  <!-- Bottom separator hairline -->
+  <line x1="18" y1="62" x2="592" y2="62" stroke="#DCA203" stroke-opacity="0.45" stroke-width="1.5"/>
+</svg>

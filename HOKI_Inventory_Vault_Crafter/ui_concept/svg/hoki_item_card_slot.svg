@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 192" fill="none">
+  <!-- HOKI TOWN // Signature Item Card Slot (SliceCenter: 28, 36, 132, 164) -->
+  <defs>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#191D26"/>
+      <stop offset="100%" stop-color="#0D0F14"/>
+    </linearGradient>
+    <linearGradient id="goldAccent" x1="16" y1="6" x2="144" y2="6" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#DCA203"/>
+      <stop offset="100%" stop-color="#F7CF46"/>
+    </linearGradient>
+  </defs>
+  <!-- Main notched card body -->
+  <path d="M14 2 H154 L158 6 V174 L142 190 H6 L2 186 V14 Z" fill="url(#cardBg)" stroke="#2F3542" stroke-width="1.5"/>
+  <!-- Inner icon stage frame -->
+  <path d="M12 18 H148 V126 H12 Z" fill="#090B0E" fill-opacity="0.65" stroke="#FFFFFF" stroke-opacity="0.05"/>
+  <!-- Top signature accent stripe -->
+  <path d="M16 4 H72 L66 9 H11 Z" fill="url(#goldAccent)"/>
+  <!-- Bottom-right chamfer bracket -->
+  <path d="M134 188 H142 L156 174 V164" stroke="#DCA203" stroke-width="2"/>
+  <!-- Top-left corner pin -->
+  <circle cx="14" cy="14" r="1.5" fill="#DCA203" fill-opacity="0.7"/>
+</svg>

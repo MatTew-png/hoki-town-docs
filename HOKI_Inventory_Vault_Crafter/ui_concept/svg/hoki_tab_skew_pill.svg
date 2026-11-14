@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 48" fill="none">
+  <!-- HOKI TOWN // Slanted Street Category Pill -->
+  <defs>
+    <linearGradient id="pillActive" x1="0" y1="0" x2="180" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#DCA203"/>
+      <stop offset="100%" stop-color="#B88202"/>
+    </linearGradient>
+  </defs>
+  <!-- Skewed parallelogram pill -->
+  <path d="M14 4 H174 L166 44 H6 Z" fill="url(#pillActive)"/>
+  <!-- Subtle dark inner bevel highlight -->
+  <path d="M17 7 H170 L163 41 H10 Z" stroke="#FFF4C2" stroke-opacity="0.4" stroke-width="1"/>
+  <!-- Left speed notch -->
+  <path d="M18 12 H24 L21 36 H15 Z" fill="#090A0D"/>
+</svg>

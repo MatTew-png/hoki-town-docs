@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" fill="none">
+  <!-- HOKI TOWN // Primary Action Trigger CTA (Deposit / Craft / Use) -->
+  <defs>
+    <linearGradient id="ctaGrad" x1="0" y1="0" x2="240" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F2BA16"/>
+      <stop offset="50%" stop-color="#DCA203"/>
+      <stop offset="100%" stop-color="#B07A00"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 2 H234 L238 6 V42 L224 54 H6 L2 50 V12 Z" fill="url(#ctaGrad)" stroke="#FFE082" stroke-opacity="0.6" stroke-width="1.5"/>
+  <!-- Upper gloss edge -->
+  <path d="M14 5 H232" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="1.5"/>
+  <!-- Corner chevron cutout -->
+  <path d="M214 54 L238 30 V42 L224 54 Z" fill="#090B0E" fill-opacity="0.35"/>
+</svg>
